@@ -9,7 +9,7 @@ class OclError(Exception):
     pass
 
 
-class UnknownOclResourceError(OclError):
+class OclUnknownResourceError(OclError):
     def __init__(self, expr, msg):
         self.expr = expr
         self.msg = msg
@@ -51,7 +51,7 @@ class OclExportFactory(object):
         if repo_version and 'id' in repo_version:
             return repo_version['id']
         else:
-            raise UnknownOclResourceError(repo_url, 'Repository "%s" does not exist' % (repo_url))
+            raise OclUnknownResourceError(repo_url, 'Repository "%s" does not exist' % (repo_url))
 
     @staticmethod
     def load_from_export_json_file(filename):
