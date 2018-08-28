@@ -347,11 +347,13 @@ class OclFlexImporter:
         }
     }
 
-    def __init__(self, file_path='', api_url_root='', api_token='', limit=0,
+    def __init__(self, file_path='', input_list=None, api_url_root='', api_token='', limit=0,
                  test_mode=False, verbosity=1, do_update_if_exists=False, import_delay=0):
         """ Initialize this object """
 
-        self.file_path = file_path
+        self.input_list = input_list
+        if file_path:
+            self.load_from_file(file_path)
         self.api_token = api_token
         self.api_url_root = api_url_root
         self.test_mode = test_mode
@@ -390,6 +392,13 @@ class OclFlexImporter:
                  ", Verbosity:", self.verbosity,
                  ", Import Delay: ", self.import_delay)
 
+    def load_from_file(self, file_path):
+        self.file_path = file_path
+        self.input_list = []
+        with open(self.file_path) as json_file:
+            for json_line_raw in json_file:
+                self.input_list.append(json.loads(json_line_raw))
+
     def process(self):
         """
         Imports a JSON-lines file using OCL API
@@ -400,42 +409,38 @@ class OclFlexImporter:
         if self.verbosity:
             self.log_settings()
 
-        # Count lines (unless settings indicate skipping this for better performance)
+        # Count lines
         num_lines = 0
         if not self.skip_line_count:
-            with open(self.file_path) as json_file:
-                for line in json_file:
-                    num_lines += 1
+            num_lines = len(self.input_list)
 
         # Loop through each JSON object in the file
         self.import_results = OclImportResults(total_lines=num_lines)
         obj_def_keys = self.obj_def.keys()
-        with open(self.file_path) as json_file:
-            count = 0
-            num_processed = 0
-            num_skipped = 0
-            for json_line_raw in json_file:
-                if self.limit > 0 and count >= self.limit:
-                    break
-                count += 1
-                json_line_obj = json.loads(json_line_raw)
-                if "type" in json_line_obj:
-                    obj_type = json_line_obj.pop("type")
-                    if obj_type in obj_def_keys:
-                        self.log('')
-                        self.process_object(obj_type, json_line_obj)
-                        num_processed += 1
-                        self.log('[%s]' % self.import_results.get_detailed_summary())
-                    else:
-                        self.import_results.add_skip(obj_type=obj_type, text=json_line_raw)
-                        self.log("**** SKIPPING: Unrecognized 'type' attribute '" + obj_type + "' for object: " + json_line_raw)
-                        num_skipped += 1
+        count = 0
+        num_processed = 0
+        num_skipped = 0
+        for json_line_obj in json_file:
+            if self.limit > 0 and count >= self.limit:
+                break
+            count += 1
+            if "type" in json_line_obj:
+                obj_type = json_line_obj.pop("type")
+                if obj_type in obj_def_keys:
+                    self.log('')
+                    self.process_object(obj_type, json_line_obj)
+                    num_processed += 1
+                    self.log('[%s]' % self.import_results.get_detailed_summary())
                 else:
-                    self.import_results.add_skip(text=json_line_raw)
-                    self.log("**** SKIPPING: No 'type' attribute: " + json_line_raw)
+                    self.import_results.add_skip(obj_type=obj_type, text=json_line_raw)
+                    self.log("**** SKIPPING: Unrecognized 'type' attribute '" + obj_type + "' for object: " + json_line_raw)
                     num_skipped += 1
-                if self.import_delay and not self.test_mode:
-                    time.sleep(self.import_delay)
+            else:
+                self.import_results.add_skip(text=json_line_raw)
+                self.log("**** SKIPPING: No 'type' attribute: " + json_line_raw)
+                num_skipped += 1
+            if self.import_delay and not self.test_mode:
+                time.sleep(self.import_delay)
 
         return count
 
