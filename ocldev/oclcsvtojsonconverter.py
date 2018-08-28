@@ -40,32 +40,55 @@ class OclCsvToJsonConverter:
     INVALID_CHARS = ' `~!@#$%^&*()_+-=[]{}\|;:"\',/<>?'
     REPLACE_CHAR = '-'
 
-    def __init__(self, output_filename='', csv_filename='', csv_resource_definitions=None,
-                 verbose=False, include_type_attribute=True):
-        """ Initialize this object """
+    def __init__(self, output_filename='', csv_filename='', input_list=None,
+                 csv_resource_definitions=None, verbose=False, include_type_attribute=True):
+        """
+        Initialize this object
+        Parameters:
+          output_filename <string> - Filename to save results to; results returned as list if not provided
+          csv_filename <string> - Filename to load CSV data from; use "input_list" if CSV already loaded into list
+          input_list <list> - List of dictionaries objects representing each row of the CSV file
+          csv_resource_definitions <dict> - Properly formatted dictionary defining how to convert CSV to OCL-JSON
+          verbose <int> - 0=off, 1=some debug info, 2=all debug info
+          include_type_attribute <bool> - Whether to include resource type attributes (e.g. "type":"Concept") in the output
+        """
         self.output_filename = output_filename
         self.csv_filename = csv_filename
-        self.csv_resource_definitions = csv_resource_definitions
+        self.input_list = input_list
+        if csv_filename and input_list:
+            raise Exception('Can only specify "csv_filename" or "input_list". Both provided. Exiting...')
         self.verbose = verbose
         self.include_type_attribute = include_type_attribute
+        self.set_resource_definitions(csv_resource_definitions=csv_resource_definitions)
+
+    def set_resource_definitions(self, csv_resource_definitions=None):
+        self.csv_resource_definitions = csv_resource_definitions
+
+    def load_csv(self, csv_filename):
+        input_list = []
+        with open(csv_filename) as csvfile:
+            reader = csv.DictReader(csvfile)
+            for row in reader:
+                input_list.append(row)
+        self.input_list = input_list
 
     def process_by_row(self):
         """ Processes the CSV file applying all definitions to each row before moving to the next row """
-        with open(self.csv_filename) as csvfile:
-            csv_reader = csv.DictReader(csvfile)
-            for csv_row in csv_reader:
-                for csv_resource_def in self.csv_resource_definitions:
-                    if 'is_active' not in csv_resource_def or csv_resource_def['is_active']:
-                        self.process_csv_row_with_definition(csv_row, csv_resource_def)
+        if self.csv_filename:
+            self.load_csv(self.csv_filename)
+        for csv_row in self.input_list:
+            for csv_resource_def in self.csv_resource_definitions:
+                if 'is_active' not in csv_resource_def or csv_resource_def['is_active']:
+                    self.process_csv_row_with_definition(csv_row, csv_resource_def)
 
     def process_by_definition(self):
         """ Processes the CSV file by looping through it entirely once for each definition """
+        if self.csv_filename:
+            self.load_csv(self.csv_filename)
         for csv_resource_def in self.csv_resource_definitions:
             if 'is_active' not in csv_resource_def or csv_resource_def['is_active']:
-                with open(self.csv_filename) as csvfile:
-                    csv_reader = csv.DictReader(csvfile)
-                    for csv_row in csv_reader:
-                        self.process_csv_row_with_definition(csv_row, csv_resource_def)
+                for csv_row in self.input_list:
+                    self.process_csv_row_with_definition(csv_row, csv_resource_def)
 
     def process_csv_row_with_definition(self, csv_row, csv_resource_def):
         """ Process individual CSV row with the provided CSV resource definition """
@@ -185,7 +208,6 @@ class OclCsvToJsonConverter:
         else:
             print (json.dumps(ocl_resource))
 
-
     def process_reference(self, csv_row, field_def):
         result = None
         #print field_def['data_column']
@@ -193,7 +215,6 @@ class OclCsvToJsonConverter:
                 field_def['data_column'] in csv_row):
             result = {'expressions': [ csv_row[field_def['data_column']] ]}
         return result
-
 
     def format_identifier(self, unformatted_id):
         ''' Format a string according to the OCL ID rules '''
