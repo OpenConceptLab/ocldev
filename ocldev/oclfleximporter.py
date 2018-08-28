@@ -382,11 +382,11 @@ class OclFlexImporter:
         sys.stdout.flush()
 
     def log_settings(self):
-        """ Output log of the object settings """
+        """ Output log of the object settings """ 
         self.log("**** OCL IMPORT SCRIPT SETTINGS ****",
                  "API Root URL:", self.api_url_root,
                  ", API Token:", self.api_token,
-                 ", Import File:", self.file_path,
+                 (", Import File: %s" % self.file_path) if self.file_path else '',
                  ", Test Mode:", self.test_mode,
                  ", Update Resource if Exists: ", self.do_update_if_exists,
                  ", Verbosity:", self.verbosity,
