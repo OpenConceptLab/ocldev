@@ -26,11 +26,11 @@ Deviations from OCL API responses:
 """
 
 import json
-import requests
 import sys
 import time
 from datetime import datetime
 import urllib
+import requests
 
 
 # Owner fields: ( owner AND owner_type ) OR ( owner_url )
@@ -71,7 +71,7 @@ class InvalidObjectDefinition(OclImportError):
         self.message = message
 
 
-class OclImportResults:
+class OclImportResults(object):
     """ Class to capture the results of processing an import script """
 
     SKIP_KEY = 'SKIPPED'
@@ -85,8 +85,8 @@ class OclImportResults:
         self.num_skipped = 0
         self.total_lines = total_lines
 
-    def add(self, obj_url='', action_type='', obj_type='', obj_repo_url='', http_method='', obj_owner_url='',
-            status_code=None):
+    def add(self, obj_url='', action_type='', obj_type='', obj_repo_url='',
+            http_method='', obj_owner_url='', status_code=None):
         """
         Add a result to this OclImportResults object
         :param obj_url:
@@ -99,7 +99,7 @@ class OclImportResults:
         :return:
         """
 
-        # TODO: Handle logging for references differently since they can be batched and always return 200
+        # TODO: Handle logging for refs differently since they are batched and return 200
 
         # Determine the first dimension (the "logging root") of the results object
         logging_root = ''
@@ -122,7 +122,8 @@ class OclImportResults:
             self._results[logging_root][action_type] = {}
         if status_code not in self._results[logging_root][action_type]:
             self._results[logging_root][action_type][status_code] = []
-        self._results[logging_root][action_type][status_code].append('%s %s' % (http_method, obj_url))
+        self._results[logging_root][action_type][status_code].append(
+            '%s %s' % (http_method, obj_url))
 
         self.count += 1
 
@@ -147,7 +148,8 @@ class OclImportResults:
 
     def has(self, root_key='', limit_to_success_codes=False):
         """
-        Return whether this OclImportResults object contains a result matching the specified root_key
+        Return whether this OclImportResults object contains a
+        result matching the specified root_key
         :param root_key: Key to match
         :param limit_to_success_codes: Set to true to only match a successful import result
         :return: True if a match found; False otherwise
@@ -181,7 +183,7 @@ class OclImportResults:
             return 'Processed %s for key "%s"' % (num_processed, root_key)
 
     def get_detailed_summary(self, root_key=None, limit_to_success_codes=False):
-        # Build a results summary dictionary
+        """ Build a results summary dictionary """
         results_summary = {}
         if root_key:
             keys = [root_key]
@@ -210,7 +212,8 @@ class OclImportResults:
                 action_type_count += results_summary[action_type][status_code]
                 if status_code_summary:
                     status_code_summary += ', '
-                status_code_summary += '%s: %s' % (status_code, results_summary[action_type][status_code])
+                status_code_summary += '%s: %s' % (
+                    status_code, results_summary[action_type][status_code])
             output += '%s %s (%s)' % (action_type_count, action_type, status_code_summary)
 
         # Polish it all off
@@ -227,7 +230,7 @@ class OclImportResults:
         return output
 
 
-class OclFlexImporter:
+class OclFlexImporter(object):
     """
     Class to flexibly import multiple resource types into OCL from JSON lines files via
     the OCL API rather than the batch importer.
@@ -383,7 +386,7 @@ class OclFlexImporter:
         sys.stdout.flush()
 
     def log_settings(self):
-        """ Output log of the object settings """ 
+        """ Output log of the object settings """
         self.log("**** OCL IMPORT SCRIPT SETTINGS ****",
                  "API Root URL:", self.api_url_root,
                  ", API Token:", self.api_token,
@@ -394,6 +397,7 @@ class OclFlexImporter:
                  ", Import Delay: ", self.import_delay)
 
     def load_from_file(self, file_path):
+        """ Load the OCL-formatted JSON file from the specified path """
         self.file_path = file_path
         self.input_list = []
         with open(self.file_path) as json_file:
@@ -421,7 +425,8 @@ class OclFlexImporter:
         count = 0
         num_processed = 0
         num_skipped = 0
-        for json_line_obj in json_file:
+        for json_line_obj in self.input_list:
+            json_line_raw = json.dumps(json_line_obj)
             if self.limit > 0 and count >= self.limit:
                 break
             count += 1
@@ -562,7 +567,8 @@ class OclFlexImporter:
         if self.obj_def[obj_type]["has_owner"]:
             has_owner = True
         if self.obj_def[obj_type]["has_source"] and self.obj_def[obj_type]["has_collection"]:
-            raise InvalidObjectDefinition(obj, "Object definition for '" + obj_type + "' must not have both 'has_source' and 'has_collection' set to True")
+            err_msg = "Object definition for '%s' must not have both 'has_source' and 'has_collection' set to True" % obj_type
+            raise InvalidObjectDefinition(obj, err_msg)
         elif self.obj_def[obj_type]["has_source"]:
             has_source = True
         elif self.obj_def[obj_type]["has_collection"]:
@@ -759,10 +765,10 @@ class OclFlexImporter:
         self.log(method, " ", self.api_url_root + url + '  ', json.dumps(obj))
         if method == 'POST':
             request_result = requests.post(self.api_url_root + url, headers=self.api_headers,
-                                         data=json.dumps(obj))
+                                           data=json.dumps(obj))
         elif method == 'PUT':
             request_result = requests.put(self.api_url_root + url, headers=self.api_headers,
-                                         data=json.dumps(obj))
+                                          data=json.dumps(obj))
         self.log("STATUS CODE:", request_result.status_code)
         self.log(request_result.headers)
         self.log(request_result.text)
