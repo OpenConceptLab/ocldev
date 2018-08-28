@@ -352,6 +352,7 @@ class OclFlexImporter:
         """ Initialize this object """
 
         self.input_list = input_list
+        self.file_path = file_path
         if file_path:
             self.load_from_file(file_path)
         self.api_token = api_token
@@ -386,9 +387,9 @@ class OclFlexImporter:
         self.log("**** OCL IMPORT SCRIPT SETTINGS ****",
                  "API Root URL:", self.api_url_root,
                  ", API Token:", self.api_token,
-                 (", Import File: %s" % self.file_path) if self.file_path else '',
+                 ", Import File:", self.file_path,
                  ", Test Mode:", self.test_mode,
-                 ", Update Resource if Exists: ", self.do_update_if_exists,
+                 ", Update Resource if Exists:", self.do_update_if_exists,
                  ", Verbosity:", self.verbosity,
                  ", Import Delay: ", self.import_delay)
 
