@@ -17,15 +17,20 @@ class OclUnknownResourceError(OclError):
 
 class OclExportFactory(object):
     @staticmethod
-    def load_export(repo_version_url):
+    def load_export(repo_version_url='', oclapitoken='',
+                    compressed_pathname='ocl_temp_repo_export.zip'):
+        # Prepare the headers
+        oclapiheaders = {'Content-Type': 'application/json'}
+        if oclapitoken:
+            oclapiheaders['Authorization'] = 'Token ' + oclapitoken
+
         # Fetch the export and write to file
         repo_export_url = '%sexport/' % (repo_version_url)
-        r = requests.get(repo_export_url, allow_redirects=True)
-        zip_filename = 'ocl_temp_repo_export.zip'
-        open(zip_filename, 'wb').write(r.content)
+        r = requests.get(repo_export_url, allow_redirects=True, headers=oclapiheaders)
+        open(compressed_pathname, 'wb').write(r.content)
 
         # Unzip the export
-        zip_ref = zipfile.ZipFile(zip_filename, 'r')
+        zip_ref = zipfile.ZipFile(compressed_pathname, 'r')
         zip_ref.extractall()
         zip_ref.close()
 
@@ -60,7 +65,7 @@ class OclExportFactory(object):
             return OclExport(export_json)
 
 
-class OclExport:
+class OclExport(object):
     def __init__(self, export_json=None, ocl_export=None):
         self.set_export(export_json=export_json, ocl_export=ocl_export)
 
