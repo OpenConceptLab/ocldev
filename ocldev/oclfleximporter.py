@@ -139,7 +139,7 @@ class OclImportResults(object):
         if not obj_type:
             obj_type = self.NO_OBJECT_TYPE_KEY
         if obj_type not in self._results[self.SKIP_KEY]:
-            self._results[self.SKIP_KEY][obj_type] = []
+            self._results[self.SKIP_KEY][obj_type] = {}
         if self.SKIP_KEY not in self._results[self.SKIP_KEY][obj_type]:
             self._results[self.SKIP_KEY][obj_type][self.SKIP_KEY] = []
         self._results[self.SKIP_KEY][obj_type][self.SKIP_KEY].append(text)
