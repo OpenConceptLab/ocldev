@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
 	name='ocldev',
-    version='0.1.9',
+    version='0.1.10',
 	author='Open Concept Lab',
 	author_email='info@openconceptlab.org',
 	description='Development library for working with OCL metadata and APIs',

@@ -27,6 +27,7 @@ class OclExportFactory(object):
         # Fetch the export and write to file
         repo_export_url = '%sexport/' % (repo_version_url)
         r = requests.get(repo_export_url, allow_redirects=True, headers=oclapiheaders)
+        r.raise_for_status()
         open(compressed_pathname, 'wb').write(r.content)
 
         # Unzip the export

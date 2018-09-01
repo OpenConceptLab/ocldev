@@ -74,7 +74,7 @@ class InvalidObjectDefinition(OclImportError):
 class OclImportResults(object):
     """ Class to capture the results of processing an import script """
 
-    SKIP_KEY = 'SKIPPED'
+    SKIP_KEY = 'skip'
     NO_OBJECT_TYPE_KEY = 'NO-OBJECT-TYPE'
     ORGS_RESULTS_ROOT = '/orgs/'
     USERS_RESULTS_ROOT = '/users/'
@@ -86,7 +86,7 @@ class OclImportResults(object):
         self.total_lines = total_lines
 
     def add(self, obj_url='', action_type='', obj_type='', obj_repo_url='',
-            http_method='', obj_owner_url='', status_code=None):
+            http_method='', obj_owner_url='', status_code=None, text='', message=''):
         """
         Add a result to this OclImportResults object
         :param obj_url:
@@ -102,7 +102,7 @@ class OclImportResults(object):
         # TODO: Handle logging for refs differently since they are batched and return 200
 
         # Determine the first dimension (the "logging root") of the results object
-        logging_root = ''
+        logging_root = '/'
         if obj_type in [OclFlexImporter.OBJ_TYPE_CONCEPT,
                         OclFlexImporter.OBJ_TYPE_MAPPING,
                         OclFlexImporter.OBJ_TYPE_REFERENCE]:
@@ -115,35 +115,29 @@ class OclImportResults(object):
         elif obj_type == OclFlexImporter.OBJ_TYPE_USER:
             logging_root = self.USERS_RESULTS_ROOT
 
-        # Add the result to the results object
+        # Setup the results dictionary to accept this new result
         if logging_root not in self._results:
             self._results[logging_root] = {}
         if action_type not in self._results[logging_root]:
             self._results[logging_root][action_type] = {}
+        if not status_code:
+            status_code = self.SKIP_KEY
         if status_code not in self._results[logging_root][action_type]:
             self._results[logging_root][action_type][status_code] = []
-        self._results[logging_root][action_type][status_code].append(
-            '%s %s' % (http_method, obj_url))
 
-        self.count += 1
-
-    def add_skip(self, obj_type='', text=''):
-        """
-        Add a skipped resource to this OclImportResults object
-        :param obj_type:
-        :param text:
-        :return:
-        """
-        if self.SKIP_KEY not in self._results:
-            self._results[self.SKIP_KEY] = {}
-        if not obj_type:
-            obj_type = self.NO_OBJECT_TYPE_KEY
-        if obj_type not in self._results[self.SKIP_KEY]:
-            self._results[self.SKIP_KEY][obj_type] = {}
-        if self.SKIP_KEY not in self._results[self.SKIP_KEY][obj_type]:
-            self._results[self.SKIP_KEY][obj_type][self.SKIP_KEY] = []
-        self._results[self.SKIP_KEY][obj_type][self.SKIP_KEY].append(text)
-        self.num_skipped += 1
+        # Add the result to the results object
+        new_result = {
+            'obj_type': obj_type,
+            'obj_url': obj_url,
+            'action_type': action_type,
+            'method': http_method,
+            'obj_repo_url': obj_repo_url,
+            'obj_owner_url': obj_owner_url,
+            'status_code': status_code,
+            'text': text,
+            'message': message
+        }
+        self._results[logging_root][action_type][status_code].append(new_result)
         self.count += 1
 
     def has(self, root_key='', limit_to_success_codes=False):
@@ -198,7 +192,9 @@ class OclImportResults(object):
                     if limit_to_success_codes and (int(status_code) < 200 or int(status_code) >= 300):
                         continue
                     status_code_count = len(self._results[k][action_type][status_code])
-                    results_summary[action_type][status_code] = status_code_count
+                    if status_code not in results_summary[action_type]:
+                        results_summary[action_type][status_code] = 0
+                    results_summary[action_type][status_code] += status_code_count
                     total_count += status_code_count
 
         # Turn the results summary dictionary into a string
@@ -212,7 +208,7 @@ class OclImportResults(object):
                 action_type_count += results_summary[action_type][status_code]
                 if status_code_summary:
                     status_code_summary += ', '
-                status_code_summary += '%s: %s' % (
+                status_code_summary += '%s:%s' % (
                     status_code, results_summary[action_type][status_code])
             output += '%s %s (%s)' % (action_type_count, action_type, status_code_summary)
 
@@ -224,8 +220,8 @@ class OclImportResults(object):
         if root_key:
             output = '%s %s for key "%s"' % (process_str, output, root_key)
         else:
-            output = '%s %s and skipped %s of %s total -- %s' % (
-                process_str, total_count, self.num_skipped, self.total_lines, output)
+            output = '%s %s of %s -- %s' % (
+                process_str, total_count, self.total_lines, output)
 
         return output
 
@@ -254,6 +250,7 @@ class OclFlexImporter(object):
     ACTION_TYPE_RETIRE = 'retire'
     ACTION_TYPE_DELETE = 'delete'
     ACTION_TYPE_OTHER = 'other'
+    ACTION_TYPE_SKIP = 'skip'
 
     # Resource type definitions
     obj_def = {
@@ -438,12 +435,15 @@ class OclFlexImporter(object):
                     num_processed += 1
                     self.log('[%s]' % self.import_results.get_detailed_summary())
                 else:
-                    self.import_results.add_skip(obj_type=obj_type, text=json_line_raw)
-                    self.log("**** SKIPPING: Unrecognized 'type' attribute '" + obj_type + "' for object: " + json_line_raw)
+                    message = "Unrecognized 'type' attribute '%s' for object: %s" % (obj_type, json_line_raw)
+                    self.import_results.add(action_type=self.ACTION_TYPE_SKIP, obj_type=obj_type,
+                                            text=json_line_raw, message=message)
+                    self.log('**** SKIPPING: %s' % message)
                     num_skipped += 1
             else:
-                self.import_results.add_skip(text=json_line_raw)
-                self.log("**** SKIPPING: No 'type' attribute: " + json_line_raw)
+                message = "No 'type' attribute: %s" % json_line_raw
+                self.import_results.add(action_type=self.ACTION_TYPE_SKIP, text=json_line_raw, message=message)
+                self.log('**** SKIPPING: %s' % message)
                 num_skipped += 1
             if self.import_delay and not self.test_mode:
                 time.sleep(self.import_delay)
@@ -623,6 +623,7 @@ class OclFlexImporter(object):
                 raise InvalidRepositoryError(obj, "Valid collection information required for object of type '" + obj_type + "'")
 
         # Build object URLs -- note that these always end with forward slashes
+        obj_url = new_obj_url = ''
         if has_source or has_collection:
             if 'omit_resource_name_on_get' in self.obj_def[obj_type] and self.obj_def[obj_type]['omit_resource_name_on_get']:
                 # Source or collection version does not use 'versions' in endpoint
@@ -664,17 +665,27 @@ class OclFlexImporter(object):
             self.log("** Allowed Fields: **", json.dumps(obj))
             self.log("** Removed Fields: **", json.dumps(obj_not_allowed))
 
-        # Check if owner exists
+        # Check if owner exists - at this point obj_url, obj_owner_url, and obj_repo_url are set
         if has_owner and obj_owner_url:
             try:
                 if self.does_object_exist(obj_owner_url):
                     self.log("** INFO: Owner exists at: " + obj_owner_url)
                 else:
-                    self.log("** SKIPPING: Owner does not exist at: " + obj_owner_url)
+                    message = "Owner does not exist at: %s" % obj_owner_url
+                    self.log("** SKIPPING: %s" % message)
+                    self.import_results.add(action_type=self.ACTION_TYPE_SKIP, obj_type=obj_type,
+                                            obj_url=obj_url, obj_repo_url=obj_repo_url,
+                                            obj_owner_url=obj_owner_url,
+                                            text=json.dumps(obj), message=message)
                     if not self.test_mode:
                         return
             except UnexpectedStatusCodeError as e:
-                self.log("** SKIPPING: Unexpected error occurred: ", e.expression, e.message)
+                message = "Unexpected error occurred: %s, %s" % (e.expression, e.message)
+                self.import_results.add(action_type=self.ACTION_TYPE_SKIP, obj_type=obj_type,
+                                        obj_url=obj_url, obj_repo_url=obj_repo_url,
+                                        obj_owner_url=obj_owner_url,
+                                        text=json.dumps(obj), message=message)
+                self.log("** SKIPPING: %s" % message)
                 return
 
         # Check if repository exists
@@ -683,11 +694,21 @@ class OclFlexImporter(object):
                 if self.does_object_exist(obj_repo_url):
                     self.log("** INFO: Repository exists at: " + obj_repo_url)
                 else:
-                    self.log("** SKIPPING: Repository does not exist at: " + obj_repo_url)
+                    message = "Repository does not exist at: %s" % obj_repo_url
+                    self.import_results.add(action_type=self.ACTION_TYPE_SKIP, obj_type=obj_type,
+                                            obj_url=obj_url, obj_repo_url=obj_repo_url,
+                                            obj_owner_url=obj_owner_url,
+                                            text=json.dumps(obj), message=message)
+                    self.log("** SKIPPING: %s" % message)
                     if not self.test_mode:
                         return
             except UnexpectedStatusCodeError as e:
-                self.log("** SKIPPING: Unexpected error occurred: ", e.expression, e.message)
+                message = "Unexpected error occurred: %s, %s" % (e.expression, e.message)
+                self.import_results.add(action_type=self.ACTION_TYPE_SKIP, obj_type=obj_type,
+                                        obj_url=obj_url, obj_repo_url=obj_repo_url,
+                                        obj_owner_url=obj_owner_url,
+                                        text=json.dumps(obj), message=message)
+                self.log("** SKIPPING: %s" % message)
                 return
 
         # Check if object already exists: GET self.api_url_root + obj_url
@@ -700,10 +721,20 @@ class OclFlexImporter(object):
             else:
                 obj_already_exists = self.does_object_exist(obj_url)
         except UnexpectedStatusCodeError as e:
-            self.log("** SKIPPING: Unexpected error occurred: ", e.expression, e.message)
+            message = "Unexpected error occurred: %s, %s" % (e.expression, e.message)
+            self.import_results.add(action_type=self.ACTION_TYPE_SKIP, obj_type=obj_type,
+                                    obj_url=obj_url, obj_repo_url=obj_repo_url,
+                                    obj_owner_url=obj_owner_url,
+                                    text=json.dumps(obj), message=message)
+            self.log("** SKIPPING: %s" % message)
             return
         if obj_already_exists and not self.do_update_if_exists:
-            self.log("** SKIPPING: Object already exists at: " + self.api_url_root + obj_url)
+            message = "Object already exists at: %s%s" % (self.api_url_root, obj_url)
+            self.import_results.add(action_type=self.ACTION_TYPE_SKIP, obj_type=obj_type,
+                                    obj_url=obj_url, obj_repo_url=obj_repo_url,
+                                    obj_owner_url=obj_owner_url,
+                                    text=json.dumps(obj), message=message)
+            self.log("** SKIPPING: %s" % message)
             if not self.test_mode:
                 return
         elif obj_already_exists:
@@ -758,7 +789,12 @@ class OclFlexImporter(object):
         # Determine method
         if obj_already_exists:
             # Skip updates for now
-            self.log("[SKIPPING UPDATE] ", method, self.api_url_root + url + '  ', json.dumps(obj))
+            message = 'Skipping update: %s %s%s  %s' % (method, self.api_url_root, url, json.dumps(obj))
+            self.import_results.add(action_type=self.ACTION_TYPE_SKIP, obj_type=obj_type,
+                                    obj_url=obj_url, obj_repo_url=obj_repo_url,
+                                    obj_owner_url=obj_owner_url, http_method=method,
+                                    text=json.dumps(obj), message=message)
+            self.log("[SKIPPING] %s" % message)
             return
 
         # Create or update the object
