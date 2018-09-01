@@ -177,7 +177,9 @@ class OclImportResults(object):
             return 'Processed %s for key "%s"' % (num_processed, root_key)
 
     def get_detailed_summary(self, root_key=None, limit_to_success_codes=False):
-        """ Build a results summary dictionary """
+        """ Get a detailed summary of the results """
+
+        # Build results summary dictionary - organized by action type instead of root
         results_summary = {}
         if root_key:
             keys = [root_key]
@@ -224,6 +226,19 @@ class OclImportResults(object):
                 process_str, total_count, self.total_lines, output)
 
         return output
+
+    def display_report(self):
+        """ Display a full report of the results """
+        for logging_root in self._results:
+            print '%s:' % logging_root
+            for action_type in self._results[logging_root]:
+                for status_code in self._results[logging_root][action_type]:
+                    if action_type == status_code == self.SKIP_KEY:
+                        print '  %s:' % (self.SKIP_KEY)
+                    else:
+                        print '  %s %s:' % (action_type, status_code)
+                    for result in self._results[logging_root][action_type][status_code]:
+                        print '    %s  %s' % (result['message'], result['text'])
 
 
 class OclFlexImporter(object):
@@ -434,6 +449,10 @@ class OclFlexImporter(object):
                     self.process_object(obj_type, json_line_obj)
                     num_processed += 1
                     self.log('[%s]' % self.import_results.get_detailed_summary())
+
+                    # Optionally delay before processing next row
+                    if self.import_delay and not self.test_mode:
+                        time.sleep(self.import_delay)
                 else:
                     message = "Unrecognized 'type' attribute '%s' for object: %s" % (obj_type, json_line_raw)
                     self.import_results.add(action_type=self.ACTION_TYPE_SKIP, obj_type=obj_type,
@@ -445,8 +464,6 @@ class OclFlexImporter(object):
                 self.import_results.add(action_type=self.ACTION_TYPE_SKIP, text=json_line_raw, message=message)
                 self.log('**** SKIPPING: %s' % message)
                 num_skipped += 1
-            if self.import_delay and not self.test_mode:
-                time.sleep(self.import_delay)
 
         return count
 
@@ -810,7 +827,8 @@ class OclFlexImporter(object):
         self.log(request_result.text)
         self.import_results.add(
             obj_url=obj_url, action_type=action_type, obj_type=obj_type, obj_repo_url=obj_repo_url,
-            http_method=method, obj_owner_url=obj_owner_url, status_code=request_result.status_code)
+            http_method=method, obj_owner_url=obj_owner_url, status_code=request_result.status_code,
+            text=json.dumps(obj), message=request_result.text)
         request_result.raise_for_status()
 
     def find_nth(self, haystack, needle, n):
