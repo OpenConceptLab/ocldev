@@ -229,6 +229,7 @@ class OclImportResults(object):
 
     def display_report(self):
         """ Display a full report of the results """
+        print 'REPORT OF IMPORT RESULTS:'
         for logging_root in self._results:
             print '%s:' % logging_root
             for action_type in self._results[logging_root]:
@@ -307,7 +308,7 @@ class OclFlexImporter(object):
             "has_collection": False,
             "allowed_fields": ["id", "external_id", "concept_class", "datatype", "names", "descriptions", "retired", "extras"],
             "create_method": "POST",
-            "update_method": "POST",
+            "update_method": "PUT",
         },
         OBJ_TYPE_MAPPING: {
             "id_field": "id",
@@ -801,17 +802,6 @@ class OclFlexImporter(object):
         # Get out of here if in test mode
         if self.test_mode:
             self.log("[TEST MODE] ", method, self.api_url_root + url + '  ', json.dumps(obj))
-            return
-
-        # Determine method
-        if obj_already_exists:
-            # Skip updates for now
-            message = 'Skipping update: %s %s%s  %s' % (method, self.api_url_root, url, json.dumps(obj))
-            self.import_results.add(action_type=self.ACTION_TYPE_SKIP, obj_type=obj_type,
-                                    obj_url=obj_url, obj_repo_url=obj_repo_url,
-                                    obj_owner_url=obj_owner_url, http_method=method,
-                                    text=json.dumps(obj), message=message)
-            self.log("[SKIPPING] %s" % message)
             return
 
         # Create or update the object
