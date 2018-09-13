@@ -29,7 +29,7 @@ import re
 
 
 class OclCsvToJsonConverter:
-    ''' Class to convert CSV file to OCL-formatted JSON flex file '''
+    """ Class to convert CSV file to OCL-formatted JSON flex file """
 
     DEF_CORE_FIELDS = 'core_fields'
     DEF_SUB_RESOURCES = 'subresources'
@@ -37,7 +37,9 @@ class OclCsvToJsonConverter:
 
     INTERNAL_MAPPING_ID = 'Internal'
     EXTERNAL_MAPPING_ID = 'External'
-    INVALID_CHARS = ' `~!@#$%^&*()_+-=[]{}\|;:"\',/<>?'
+
+    # Note that underscores are allowed for a concept ID and the exception is made in the code
+    INVALID_CHARS = ' `~!@#$%^&*()_+-=[]{}\\|;:"\',/<>?'
     REPLACE_CHAR = '-'
 
     def __init__(self, output_filename='', csv_filename='', input_list=None,
@@ -45,12 +47,16 @@ class OclCsvToJsonConverter:
         """
         Initialize this object
         Parameters:
-          output_filename <string> - Filename to save results to; results returned as list if not provided
-          csv_filename <string> - Filename to load CSV data from; use "input_list" if CSV already loaded into list
+          output_filename <string> - Filename to save results to; results
+                returned as list if not provided
+          csv_filename <string> - Filename to load CSV data from; use "input_list"
+                if CSV already loaded into list
           input_list <list> - List of dictionaries objects representing each row of the CSV file
-          csv_resource_definitions <dict> - Properly formatted dictionary defining how to convert CSV to OCL-JSON
+          csv_resource_definitions <dict> - Properly formatted dictionary defining
+                how to convert CSV to OCL-JSON
           verbose <int> - 0=off, 1=some debug info, 2=all debug info
-          include_type_attribute <bool> - Whether to include resource type attributes (e.g. "type":"Concept") in the output
+          include_type_attribute <bool> - Whether to include resource type attributes
+                (e.g. "type":"Concept") in the output
         """
         self.output_filename = output_filename
         self.csv_filename = csv_filename
@@ -60,8 +66,12 @@ class OclCsvToJsonConverter:
         self.verbose = verbose
         self.include_type_attribute = include_type_attribute
         self.set_resource_definitions(csv_resource_definitions=csv_resource_definitions)
+        self.output_list = []
 
     def preprocess_csv_row(self, row, attr=None):
+        """
+        Method intended to be overwritten in classes that extend this
+        """
         return row
 
     def set_resource_definitions(self, csv_resource_definitions=None):
@@ -76,7 +86,9 @@ class OclCsvToJsonConverter:
         self.input_list = input_list
 
     def process_by_row(self, num_rows=0, attr=None):
-        """ Processes the CSV file applying all definitions to each row before moving to the next row """
+        """
+        Processes the CSV file applying all definitions to each row before moving to the next row
+        """
         if self.csv_filename:
             self.load_csv(self.csv_filename)
         row_i = 0
@@ -126,7 +138,8 @@ class OclCsvToJsonConverter:
         elif 'skip_handler' in csv_resource_def:
             handler = getattr(self, csv_resource_def['skip_handler'])
             if not handler:
-                raise Exception("skip_handler '" + csv_resource_def['skip_handler'] + "' is not defined")
+                raise Exception(
+                    "skip_handler '" + csv_resource_def['skip_handler'] + "' is not defined")
             is_skip_row = handler(csv_resource_def, csv_row)
         if is_skip_row:
             if self.verbose:
@@ -146,22 +159,27 @@ class OclCsvToJsonConverter:
             id_column = csv_resource_def['id_column']
             if id_column not in csv_row or not csv_row[id_column]:
                 raise Exception('ID column %s not set or empty in row %s' % (id_column, csv_row))
-            ocl_resource['id'] = self.format_identifier(csv_row[id_column])
+            if 'resource_type' in csv_resource_def and csv_resource_def['resource_type'] == 'Concept':
+                ocl_resource['id'] = self.format_identifier(csv_row[id_column], allow_underscore=True)
+            else:
+                ocl_resource['id'] = self.format_identifier(csv_row[id_column])
 
         # Core fields
         if self.DEF_CORE_FIELDS in csv_resource_def and csv_resource_def[self.DEF_CORE_FIELDS]:
             for field_def in csv_resource_def[self.DEF_CORE_FIELDS]:
                 if 'resource_field' not in field_def:
-                    raise Exception('Expected key "resource_field" in standard column definition, but none found: %s' % field_def)
+                    raise Exception(
+                        'Expected key "resource_field" in standard column definition, but none found: %s' % field_def)
                 if 'column' in field_def:
                     ocl_resource[field_def['resource_field']] = csv_row[field_def['column']]
                 elif 'value' in field_def:
                     ocl_resource[field_def['resource_field']] = field_def['value']
                 elif 'csv_to_json_processor' in field_def and 'data_column' in field_def:
-                    methodToCall = getattr(self, field_def['csv_to_json_processor'])
-                    ocl_resource[field_def['resource_field']] = methodToCall(csv_row, field_def)
+                    method_to_call = getattr(self, field_def['csv_to_json_processor'])
+                    ocl_resource[field_def['resource_field']] = method_to_call(csv_row, field_def)
                 else:
-                    raise Exception('Expected "column", "value", or "csv_to_json_processor" key in standard column definition, but none found: %s' % field_def)
+                    raise Exception(
+                        'Expected "column", "value", or "csv_to_json_processor" key in standard column definition, but none found: %s' % field_def)
 
         # Dictionary columns
         if self.DEF_SUB_RESOURCES in csv_resource_def and csv_resource_def[self.DEF_SUB_RESOURCES]:
@@ -171,13 +189,15 @@ class OclCsvToJsonConverter:
                     current_dict = {}
                     for field_def in dict_def:
                         if 'resource_field' not in field_def:
-                            raise Exception('Expected key "resource_field" in subresource definition, but none found: %s' % field_def)
+                            raise Exception(
+                                'Expected key "resource_field" in subresource definition, but none found: %s' % field_def)
                         if 'column' in field_def:
                             current_dict[field_def['resource_field']] = csv_row[field_def['column']]
                         elif 'value' in field_def:
                             current_dict[field_def['resource_field']] = field_def['value']
                         else:
-                            raise Exception('Expected "column" or "value" key in subresource definition, but none found: %s' % field_def)
+                            raise Exception(
+                                'Expected "column" or "value" key in subresource definition, but none found: %s' % field_def)
                     if current_dict:
                         ocl_resource[group_name].append(current_dict)
 
@@ -219,7 +239,7 @@ class OclCsvToJsonConverter:
 
         # Output
         if self.output_filename:
-            output_file = open(self.output_filename,'a')
+            output_file = open(self.output_filename, 'a')
             output_file.write(json.dumps(ocl_resource))
             output_file.write('\n')
         else:
@@ -227,17 +247,26 @@ class OclCsvToJsonConverter:
             #print json.dumps(ocl_resource)
 
     def process_reference(self, csv_row, field_def):
+        """
+        Processes a reference in the CSV row
+        """
         result = None
-        #print field_def['data_column']
         if ('data_column' in field_def and field_def['data_column'] and
                 field_def['data_column'] in csv_row):
-            result = {'expressions': [ csv_row[field_def['data_column']] ]}
+            result = {'expressions': [csv_row[field_def['data_column']]]}
         return result
 
-    def format_identifier(self, unformatted_id):
-        ''' Format a string according to the OCL ID rules '''
+    def format_identifier(self, unformatted_id, allow_underscore=False):
+        """
+        Format a string according to the OCL ID rules: Everything in INVALID_CHARS goes,
+        except that underscores are allowed for the concept_id
+        """
         formatted_id = list(unformatted_id)
+        if allow_underscore:
+            chars_to_remove = self.INVALID_CHARS.replace('_', '')
+        else:
+            chars_to_remove = self.INVALID_CHARS
         for index in range(len(unformatted_id)):
-            if unformatted_id[index] in self.INVALID_CHARS:
+            if unformatted_id[index] in chars_to_remove:
                 formatted_id[index] = self.REPLACE_CHAR
         return ''.join(formatted_id)
