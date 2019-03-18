@@ -4,4 +4,5 @@ Shared constants used throughout the ocldev package
 
 
 class OclConstants:
-	pass
+    """ Shared constants used in the ocldev package """
+    pass

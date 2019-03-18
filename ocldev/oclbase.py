@@ -4,4 +4,5 @@ Base class for the ocldev package
 
 
 class OclBase:
-	pass
+    """ Base class for the ocldev package """
+    pass

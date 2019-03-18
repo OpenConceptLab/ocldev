@@ -5,17 +5,20 @@ from pprint import pprint
 
 
 class OclError(Exception):
-    """Base class for exceptions in this module."""
+    """ Base class for exceptions in this module """
     pass
 
 
 class OclUnknownResourceError(OclError):
+    """ Error thrown when an unknown resource type is encountered """
     def __init__(self, expr, msg):
         self.expr = expr
         self.msg = msg
 
 
 class OclExportFactory(object):
+    """ Factory class to create OclExport factory objects """
+
     @staticmethod
     def load_export(repo_version_url='', oclapitoken='',
                     compressed_pathname='ocl_temp_repo_export.zip'):

@@ -12,17 +12,18 @@ Resources currently supported:
 * Concepts
 * Mappings
 * References
+* Source and Collection Versions
 
 Verbosity settings:
 * 0 = show only responses from server
 * 1 = show responses from server and all POSTs
-* 2 = show everything minus debug output
+* 2 = show everything except debug output
 * 3 = show everything plus debug output
 
 Deviations from OCL API responses:
 * Sources/Collections:
-    - "supported_locales" response is a list in OCL, but only a comma-separated string
-      is supported when posted here
+    - "supported_locales" response is a list in OCL, but a comma-separated string
+      is in this script instead
 """
 
 import json
@@ -573,7 +574,7 @@ class OclFlexImporter(object):
     def process_object(self, obj_type, obj):
         """ Processes an individual document in the import file """
 
-        # Grab the ID
+        # Grab the object ID
         obj_id = ''
         if 'id_field' in self.obj_def[obj_type] and self.obj_def[obj_type]['id_field'] in obj:
             obj_id = obj[self.obj_def[obj_type]['id_field']]
@@ -606,7 +607,7 @@ class OclFlexImporter(object):
                 obj_owner = obj.pop("owner")
                 if obj_owner_type == self.OBJ_TYPE_ORGANIZATION:
                     obj_owner_url = "/" + self.obj_def[self.OBJ_TYPE_ORGANIZATION]["url_name"] + "/" + obj_owner + "/"
-                elif obj_owner_url == self.OBJ_TYPE_USER:
+                elif obj_owner_type == self.OBJ_TYPE_USER:
                     obj_owner_url = "/" + self.obj_def[self.OBJ_TYPE_USER]["url_name"] + "/" + obj_owner + "/"
                 else:
                     raise InvalidOwnerError(obj, "Valid owner information required for object of type '" + obj_type + "'")
