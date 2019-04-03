@@ -85,6 +85,7 @@ class OclImportResults(object):
         self.count = 0
         self.num_skipped = 0
         self.total_lines = total_lines
+        self.elapsed_seconds = 0
 
     def add(self, obj_url='', action_type='', obj_type='', obj_repo_url='',
             http_method='', obj_owner_url='', status_code=None, text='', message=''):
@@ -241,6 +242,29 @@ class OclImportResults(object):
                         print '  %s %s:' % (action_type, status_code)
                     for result in self._results[logging_root][action_type][status_code]:
                         print '    %s  %s' % (result['message'], result['text'])
+
+    def to_json(self):
+        """ Return serialized JSON of the results object. Designed to be used with the load_from_json method """
+        return json.dumps({
+            'results': self._results,
+            'count': self.count,
+            'num_skipped': self.num_skipped,
+            'total_lines': self.total_lines,
+            'elapsed_seconds': self.elapsed_seconds,
+        })
+
+    def load_from_json(self, json_results):
+        """ Load serialized JSON results into this object. Designed to be used with the to_json method """
+        if isinstance(json_results, basestring):
+            json_results = json.loads(json_results)
+        if isinstance(json_results, dict):
+            self.count = json_results['count']
+            self.num_skipped = json_results['num_skipped']
+            self.total_lines = json_results['total_lines']
+            self._results = json_results['results']
+            self.elapsed_seconds = json_results['elapsed_seconds']
+        else:
+            raise TypeError('Expected string or dict. "%s" received.' % type(json_results))
 
 
 class OclFlexImporter(object):
@@ -424,6 +448,8 @@ class OclFlexImporter(object):
         :return: int Number of JSON lines processed
         """
 
+        start_time = time.time()
+
         # Display global settings
         if self.verbosity:
             self.log_settings()
@@ -466,6 +492,8 @@ class OclFlexImporter(object):
                 self.import_results.add(action_type=self.ACTION_TYPE_SKIP, text=json_line_raw, message=message)
                 self.log('**** SKIPPING: %s' % message)
                 num_skipped += 1
+
+        self.import_results.elapsed_seconds = time.time() - start_time
 
         return count
 
