@@ -231,17 +231,19 @@ class OclImportResults(object):
 
     def display_report(self):
         """ Display a full report of the results """
-        print 'REPORT OF IMPORT RESULTS:'
+        output = 'REPORT OF IMPORT RESULTS:\n'
         for logging_root in self._results:
-            print '%s:' % logging_root
+            output += '%s:\n' % logging_root
             for action_type in self._results[logging_root]:
                 for status_code in self._results[logging_root][action_type]:
                     if action_type == status_code == self.SKIP_KEY:
-                        print '  %s:' % (self.SKIP_KEY)
+                        output += '  %s:\n' % (self.SKIP_KEY)
                     else:
-                        print '  %s %s:' % (action_type, status_code)
+                        output += '  %s %s:\n' % (action_type, status_code)
                     for result in self._results[logging_root][action_type][status_code]:
-                        print '    %s  %s' % (result['message'], result['text'])
+                        output += '    %s  %s\n' % (result['message'], result['text'])
+
+        return output
 
     def to_json(self):
         """ Return serialized JSON of the results object. Designed to be used with the load_from_json method """
@@ -258,11 +260,11 @@ class OclImportResults(object):
         if isinstance(json_results, basestring):
             json_results = json.loads(json_results)
         if isinstance(json_results, dict):
-            self.count = json_results['count']
-            self.num_skipped = json_results['num_skipped']
-            self.total_lines = json_results['total_lines']
-            self._results = json_results['results']
-            self.elapsed_seconds = json_results['elapsed_seconds']
+            self.count = json_results.get('count', 0)
+            self.num_skipped = json_results.get('num_skipped', 0)
+            self.total_lines = json_results.get('total_lines', 0)
+            self._results = json_results.get('results', {})
+            self.elapsed_seconds = json_results.get('elapsed_seconds', 0)
         else:
             raise TypeError('Expected string or dict. "%s" received.' % type(json_results))
 
