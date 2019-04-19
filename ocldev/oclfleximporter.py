@@ -1,11 +1,17 @@
 """
-OCL Flexible Importer --
+OCL Flex Importer --
 Script that uses the OCL API to import multiple resource types from a JSON lines file.
-Configuration for individual resources can be set inline in the JSON.
-For batch imports of concepts and mappings into a single source, the server-side import
-script offers a higher performance alternative than this module.
+Configuration for individual resources can be set inline in the JSON. The bulk import
+API exposes an endpoint to submit a JSON lines file directly to the OCL server that uses
+this module for higher performance background processing. See oclapi Bulk Importing
+documentation for more information:
+https://github.com/OpenConceptLab/oclapi/wiki/Bulk-Importing
 
-Resources currently supported:
+NOTE: For batch imports of concepts or mappings into a single source, the server-side
+import scripts offer a higher performance alternative to this module, though support
+for the server-side import is expected to be discontinued.
+
+Resources currently supported by the OCL Flex Importer:
 * Organizations
 * Sources
 * Collections
@@ -73,7 +79,17 @@ class InvalidObjectDefinition(OclImportError):
 
 
 class OclImportResults(object):
-    """ Class to capture the results of processing an import script """
+    """ Class to capture and process the results of processing an import script """
+
+    OCL_IMPORT_RESULTS_MODE_SUMMARY = 'summary'
+    OCL_IMPORT_RESULTS_MODE_REPORT = 'report'
+    OCL_IMPORT_RESULTS_MODE_JSON = 'json'
+    OCL_IMPORT_RESULTS_MODES = [
+        OCL_IMPORT_RESULTS_MODE_SUMMARY,
+        OCL_IMPORT_RESULTS_MODE_REPORT,
+        OCL_IMPORT_RESULTS_MODE_JSON,
+    ]
+    OCL_IMPORT_RESULTS_MODE_DEFAULT = 'report'
 
     SKIP_KEY = 'skip'
     NO_OBJECT_TYPE_KEY = 'NO-OBJECT-TYPE'
@@ -162,6 +178,21 @@ class OclImportResults(object):
     def __str__(self):
         """ Get a concise summary of this results object """
         return self.get_summary()
+
+    def get_import_results(self, results_mode='summary'):
+        """
+        Single method to fetch import results in one of the supported formats
+        in OclImportResults.OCL_IMPORT_RESULTS_MODES
+        """
+        results_mode = results_mode.lower()
+        if results_mode not in OclImportResults.OCL_IMPORT_RESULTS_MODES:
+            results_mode = OclImportResults.OCL_IMPORT_RESULTS_MODE_DEFAULT
+        if results_mode == OclImportResults.OCL_IMPORT_RESULTS_MODE_SUMMARY:
+            return self.get_detailed_summary()
+        elif results_mode == OclImportResults.OCL_IMPORT_RESULTS_MODE_REPORT:
+            return self.display_report()
+        elif results_mode == OclImportResults.OCL_IMPORT_RESULTS_MODE_JSON:
+            return self.to_json()
 
     def get_summary(self, root_key=None):
         """
@@ -255,19 +286,99 @@ class OclImportResults(object):
             'elapsed_seconds': self.elapsed_seconds,
         })
 
-    def load_from_json(self, json_results):
+    @staticmethod
+    def load_from_json(json_results):
         """ Load serialized JSON results into this object. Designed to be used with the to_json method """
         if isinstance(json_results, basestring):
             json_results = json.loads(json_results)
         if isinstance(json_results, dict):
-            self.count = json_results.get('count', 0)
-            self.num_skipped = json_results.get('num_skipped', 0)
-            self.total_lines = json_results.get('total_lines', 0)
-            self._results = json_results.get('results', {})
-            self.elapsed_seconds = json_results.get('elapsed_seconds', 0)
+            results_obj = OclImportResults()
+            results_obj._results = json_results.get('results', {})
+            results_obj.count = json_results.get('count', 0)
+            results_obj.num_skipped = json_results.get('num_skipped', 0)
+            results_obj.total_lines = json_results.get('total_lines', 0)
+            results_obj.elapsed_seconds = json_results.get('elapsed_seconds', 0)
+            return results_obj
         else:
             raise TypeError('Expected string or dict. "%s" received.' % type(json_results))
 
+
+class OclBulkImporter(object):
+    """
+    Helper class to use the OCL bulk import API to process an OCL-formatted JSON lines file.
+    The OCL bulk import API simply runs the OclFlexImporter object asynchronously on the server
+    for much higher performance processing.
+
+    Currently, bulk import can only be run in live mode (test_mode=False) with limit set to zero
+    and updating objects set to False.
+    """
+
+    OCL_BULK_IMPORT_API_ENDPOINT = '/manage/bulkimport/'
+
+    @staticmethod
+    def post(file_path='', input_list=None, api_url_root='', api_token=''):
+        """ Post the import to the OCL bulk import API endpoint and save the task ID """
+
+        # Prep the import JSON
+        if input_list:
+            # change to a string with line separators
+            post_data = ''
+            for line in input_list:
+                post_data += json.dumps(line) + '\n'
+        elif file_path:
+            # load the file as a string
+            f = open(file_path, 'rb')
+            post_data = f.read()
+
+        # Process the import
+        url = api_url_root + OclBulkImporter.OCL_BULK_IMPORT_API_ENDPOINT
+        api_headers = {'Authorization': 'Token ' + api_token}
+        import_request = requests.post(url, headers=api_headers, data=post_data)
+        #import_request.raise_for_status()
+        #import_response = import_request.json()
+        #self.task_id = import_response['task']
+        #return self.task_id
+        return import_request
+
+    @staticmethod
+    def get_bulk_import_results(task_id=None, api_url_root='', api_token='', max_wait_seconds=0, delay_seconds=15):
+        """
+        Get an OclImportResults object representing the results of a bulk import API process
+        submit to OCL as identified by a task_id.
+        If the import is still being processed, the method will continue to try after
+        delay_seconds (default is 15 seconds) until the time elapsed is greater than
+        max_wait_seconds. delay_seconds must be greater than or equal to 5 seconds. Set
+        max_wait_seconds to zero (the default) to only request results once. max_wait_seconds
+        must be less than 300 seconds.
+        """
+
+        # Setup the request
+        if max_wait_seconds > 300:
+            max_wait_seconds = 300
+        if delay_seconds < 5:
+            delay_seconds = 5
+        start_time = time.time()
+        url = api_url_root + OclBulkImporter.OCL_BULK_IMPORT_API_ENDPOINT
+        url_params = {'task':task_id, 'result':'json'}
+        api_headers = {'Authorization': 'Token ' + api_token}
+
+        # Do the initial request and return if successful and import is complete
+        r = requests.get(url, params=url_params, headers=api_headers)
+        r.raise_for_status()
+        results_json = r.json()
+        if 'state' not in results_json or ('state' in results_json and results_json['state'] != 'PENDING'):
+            return OclImportResults.load_from_json(results_json)
+
+        # Import results were not ready, so start looping
+        while time.time() - start_time + delay_seconds < max_wait_seconds:
+            print 'Delaying %s seconds...' % str(delay_seconds)
+            time.sleep(delay_seconds)
+            r = requests.get(url, params=url_params, headers=api_headers)
+            r.raise_for_status()
+            results_json = r.json()
+            if 'state' not in results_json or ('state' in results_json and results_json['state'] != 'PENDING'):
+                return OclImportResults.load_from_json(results_json)
+        return None
 
 class OclFlexImporter(object):
     """
