@@ -2,14 +2,13 @@
 OCL Flex Importer --
 Script that uses the OCL API to import multiple resource types from a JSON lines file.
 Configuration for individual resources can be set inline in the JSON. The bulk import
-API exposes an endpoint to submit a JSON lines file directly to the OCL server that uses
-this module for higher performance background processing. See oclapi Bulk Importing
-documentation for more information:
+API exposes an endpoint to submit a JSON lines for higher performance asynchronous processing
+directly on the OCL server. See oclapi Bulk Importing documentation for more information:
 https://github.com/OpenConceptLab/oclapi/wiki/Bulk-Importing
 
-NOTE: For batch imports of concepts or mappings into a single source, the server-side
-import scripts offer a higher performance alternative to this module, though support
-for the server-side import is expected to be discontinued.
+NOTE: For batch imports of concepts or mappings into a single source, the server-side import
+script offers the highest performance alternative to this module. Note that support for the
+server-side import will be discontinued as new functionality is added to the bulk import API.
 
 Resources currently supported by the OCL Flex Importer:
 * Organizations
@@ -314,10 +313,14 @@ class OclBulkImporter(object):
     """
 
     OCL_BULK_IMPORT_API_ENDPOINT = '/manage/bulkimport/'
+    OCL_BULK_IMPORT_MAX_WAIT_SECONDS = 15 * 60
+    OCL_BULK_IMPORT_MINIMUM_DELAY_SECONDS = 5
 
     @staticmethod
     def post(file_path='', input_list=None, api_url_root='', api_token=''):
-        """ Post the import to the OCL bulk import API endpoint and save the task ID """
+        """ Post the import to the OCL bulk import API endpoint and return the request object """
+
+        # TODO: Switch to returning a custom OclBulkImportResponse object
 
         # Prep the import JSON
         if input_list:
@@ -353,10 +356,10 @@ class OclBulkImporter(object):
         """
 
         # Setup the request
-        if max_wait_seconds > 300:
-            max_wait_seconds = 300
-        if delay_seconds < 5:
-            delay_seconds = 5
+        if max_wait_seconds > OclBulkImporter.OCL_BULK_IMPORT_MAX_WAIT_SECONDS:
+            max_wait_seconds = OclBulkImporter.OCL_BULK_IMPORT_MAX_WAIT_SECONDS
+        if delay_seconds < OclBulkImporter.OCL_BULK_IMPORT_MINIMUM_DELAY_SECONDS:
+            delay_seconds = OclBulkImporter.OCL_BULK_IMPORT_MINIMUM_DELAY_SECONDS
         start_time = time.time()
         url = api_url_root + OclBulkImporter.OCL_BULK_IMPORT_API_ENDPOINT
         url_params = {'task':task_id, 'result':'json'}
@@ -371,7 +374,7 @@ class OclBulkImporter(object):
 
         # Import results were not ready, so start looping
         while time.time() - start_time + delay_seconds < max_wait_seconds:
-            print 'Delaying %s seconds...' % str(delay_seconds)
+            #print 'Delaying %s seconds...' % str(delay_seconds)
             time.sleep(delay_seconds)
             r = requests.get(url, params=url_params, headers=api_headers)
             r.raise_for_status()
