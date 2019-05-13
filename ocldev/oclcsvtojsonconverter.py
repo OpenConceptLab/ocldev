@@ -35,6 +35,11 @@ class OclCsvToJsonConverter:
     DEF_SUB_RESOURCES = 'subresources'
     DEF_KEY_VALUE_PAIRS = 'key_value_pairs'
 
+    DEF_KEY_IS_ACTIVE = 'is_active'
+    DEF_KEY_SKIP_IF_EMPTY = 'skip_if_empty_column'
+    DEF_KEY_TRIGGER_COLUMN = '__trigger_column'
+    DEF_KEY_TRIGGER_VALUE = '__trigger_value'
+
     INTERNAL_MAPPING_ID = 'Internal'
     EXTERNAL_MAPPING_ID = 'External'
 
@@ -70,7 +75,7 @@ class OclCsvToJsonConverter:
 
     def preprocess_csv_row(self, row, attr=None):
         """
-        Method intended to be overwritten in classes that extend this
+        Method intended to be overwritten in classes that extend this object
         """
         return row
 
@@ -99,7 +104,7 @@ class OclCsvToJsonConverter:
             row_i += 1
             csv_row = self.preprocess_csv_row(csv_row.copy(), attr)
             for csv_resource_def in self.csv_resource_definitions:
-                if 'is_active' not in csv_resource_def or csv_resource_def['is_active']:
+                if self.DEF_KEY_IS_ACTIVE not in csv_resource_def or csv_resource_def[self.DEF_KEY_IS_ACTIVE]:
                     self.process_csv_row_with_definition(csv_row, csv_resource_def, attr=attr)
         return self.output_list
 
@@ -109,7 +114,7 @@ class OclCsvToJsonConverter:
             self.load_csv(self.csv_filename)
         self.output_list = []
         for csv_resource_def in self.csv_resource_definitions:
-            if 'is_active' not in csv_resource_def or csv_resource_def['is_active']:
+            if self.DEF_KEY_IS_ACTIVE not in csv_resource_def or csv_resource_def[self.DEF_KEY_IS_ACTIVE]:
                 row_i = 0
                 for csv_row in self.input_list:
                     if num_rows and row_i >= num_rows:
@@ -122,16 +127,28 @@ class OclCsvToJsonConverter:
     def process_csv_row_with_definition(self, csv_row, csv_resource_def, attr=None):
         """ Process individual CSV row with the provided CSV resource definition """
 
+        # Apply the row trigger settings
+        if self.DEF_KEY_TRIGGER_COLUMN in csv_resource_def:
+            if csv_resource_def[self.DEF_KEY_TRIGGER_COLUMN] not in csv_row:
+                if self.verbose:
+                    print "SKIPPING: Trigger column '%s' not found in CSV row: %s" % (
+                        csv_resource_def[self.DEF_KEY_TRIGGER_COLUMN], csv_row)
+                return
+            if csv_row[csv_resource_def[self.DEF_KEY_TRIGGER_COLUMN]] != csv_resource_def[self.DEF_KEY_TRIGGER_VALUE]:
+                if self.verbose:
+                    print "SKIPPING: Trigger column '%s' does not match trigger value of '%s': %s" % (
+                        csv_resource_def[self.DEF_KEY_TRIGGER_COLUMN], csv_resource_def[self.DEF_KEY_TRIGGER_VALUE], csv_row[csv_resource_def[self.DEF_KEY_TRIGGER_COLUMN]])
+                return
+
         # Check if this row should be skipped
         is_skip_row = False
-        if 'skip_if_empty_column' in csv_resource_def and csv_resource_def['skip_if_empty_column']:
-            skip_columns = csv_resource_def['skip_if_empty_column']
+        if self.DEF_KEY_SKIP_IF_EMPTY in csv_resource_def and csv_resource_def[self.DEF_KEY_SKIP_IF_EMPTY]:
+            skip_columns = csv_resource_def[self.DEF_KEY_SKIP_IF_EMPTY]
             if not isinstance(skip_columns, list):
                 skip_columns = [skip_columns]
             for skip_column in skip_columns:
                 if skip_column not in csv_row:
-                    raise Exception("skip_if_empty_column '" + skip_column +
-                                    "'is not defined in the CSV file")
+                    raise Exception("%s '%s' is not defined in the CSV file" % (self.DEF_KEY_SKIP_IF_EMPTY, skip_column))
                 if csv_row[skip_column] == '':
                     is_skip_row = True
                     break
