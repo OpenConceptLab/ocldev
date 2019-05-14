@@ -352,7 +352,7 @@ class OclBulkImporter(object):
         delay_seconds (default is 15 seconds) until the time elapsed is greater than
         max_wait_seconds. delay_seconds must be greater than or equal to 5 seconds. Set
         max_wait_seconds to zero (the default) to only request results once. max_wait_seconds
-        must be less than 300 seconds.
+        must be less than OclBulkImporter.OCL_BULK_IMPORT_MAX_WAIT_SECONDS.
         """
 
         # Setup the request
@@ -381,6 +381,7 @@ class OclBulkImporter(object):
             results_json = r.json()
             if 'state' not in results_json or ('state' in results_json and results_json['state'] != 'PENDING'):
                 return OclImportResults.load_from_json(results_json)
+
         return None
 
 class OclFlexImporter(object):

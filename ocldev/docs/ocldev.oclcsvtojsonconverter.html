@@ -1,0 +1,121 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html><head><title>Python: module ocldev.oclcsvtojsonconverter</title>
+<meta charset="utf-8">
+</head><body bgcolor="#f0f0f8">
+
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="heading">
+<tr bgcolor="#7799ee">
+<td valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial">&nbsp;<br><big><big><strong><a href="ocldev.html"><font color="#ffffff">ocldev</font></a>.oclcsvtojsonconverter</strong></big></big></font></td
+><td align=right valign=bottom
+><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:/Users/jonathanpayne/Dropbox (Personal)/dev/ocldev/ocldev/oclcsvtojsonconverter.py">/Users/jonathanpayne/Dropbox (Personal)/dev/ocldev/ocldev/oclcsvtojsonconverter.py</a></font></td></tr></table>
+    <p><tt>Convert&nbsp;CSV&nbsp;to&nbsp;OCL-formatted&nbsp;JSON&nbsp;file.<br>
+&nbsp;<br>
+Script&nbsp;to&nbsp;convert&nbsp;a&nbsp;CSV&nbsp;file&nbsp;to&nbsp;an&nbsp;OCL-formatted&nbsp;JSON&nbsp;file&nbsp;based&nbsp;on&nbsp;a&nbsp;provided<br>
+set&nbsp;of&nbsp;CSV&nbsp;Resource&nbsp;Definitions.&nbsp;The&nbsp;resulting&nbsp;JSON&nbsp;is&nbsp;intended&nbsp;for&nbsp;the<br>
+OclFlexImporter&nbsp;and&nbsp;does&nbsp;not&nbsp;work&nbsp;with&nbsp;the&nbsp;batch&nbsp;concept/mapping&nbsp;importer.<br>
+&nbsp;<br>
+Definitions&nbsp;take&nbsp;the&nbsp;form:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;csv_resource_definitions&nbsp;=&nbsp;[<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'definition_name':'Concept',<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'resource_type':'Concept',<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'id_column':'id',<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'skip_if_empty_column':'id',<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#OclCsvToJsonConverter">OclCsvToJsonConverter</a>.DEF_CORE_FIELDS:[<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{'resource_type':...}<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;],<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#OclCsvToJsonConverter">OclCsvToJsonConverter</a>.DEF_SUB_RESOURCES:{<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'names':[],<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'descriptions':[],<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;},<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#OclCsvToJsonConverter">OclCsvToJsonConverter</a>.DEF_KEY_VALUE_PAIRS:{<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'extras':[],<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;},<br>
+&nbsp;&nbsp;&nbsp;&nbsp;]</tt></p>
+<p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#aa55cc">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Modules</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#aa55cc"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><table width="100%" summary="list"><tr><td width="25%" valign=top><a href="csv.html">csv</a><br>
+</td><td width="25%" valign=top><a href="json.html">json</a><br>
+</td><td width="25%" valign=top><a href="re.html">re</a><br>
+</td><td width="25%" valign=top></td></tr></table></td></tr></table><p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ee77aa">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Classes</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#ee77aa"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><dl>
+<dt><font face="helvetica, arial"><a href="ocldev.oclcsvtojsonconverter.html#OclCsvToJsonConverter">OclCsvToJsonConverter</a>
+</font></dt></dl>
+ <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="OclCsvToJsonConverter">class <strong>OclCsvToJsonConverter</strong></a></font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt>Class&nbsp;to&nbsp;convert&nbsp;CSV&nbsp;file&nbsp;to&nbsp;OCL-formatted&nbsp;JSON&nbsp;flex&nbsp;file<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%">Methods defined here:<br>
+<dl><dt><a name="OclCsvToJsonConverter-__init__"><strong>__init__</strong></a>(self, output_filename<font color="#909090">=''</font>, csv_filename<font color="#909090">=''</font>, input_list<font color="#909090">=None</font>, csv_resource_definitions<font color="#909090">=None</font>, verbose<font color="#909090">=False</font>, include_type_attribute<font color="#909090">=True</font>)</dt><dd><tt>Initialize&nbsp;this&nbsp;object<br>
+Parameters:<br>
+&nbsp;&nbsp;output_filename&nbsp;&lt;string&gt;&nbsp;-&nbsp;Filename&nbsp;to&nbsp;save&nbsp;results&nbsp;to;&nbsp;results<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;returned&nbsp;as&nbsp;list&nbsp;if&nbsp;not&nbsp;provided<br>
+&nbsp;&nbsp;csv_filename&nbsp;&lt;string&gt;&nbsp;-&nbsp;Filename&nbsp;to&nbsp;load&nbsp;CSV&nbsp;data&nbsp;from;&nbsp;use&nbsp;"input_list"<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;CSV&nbsp;already&nbsp;loaded&nbsp;into&nbsp;list<br>
+&nbsp;&nbsp;input_list&nbsp;&lt;list&gt;&nbsp;-&nbsp;List&nbsp;of&nbsp;dictionaries&nbsp;objects&nbsp;representing&nbsp;each&nbsp;row&nbsp;of&nbsp;the&nbsp;CSV&nbsp;file<br>
+&nbsp;&nbsp;csv_resource_definitions&nbsp;&lt;dict&gt;&nbsp;-&nbsp;Properly&nbsp;formatted&nbsp;dictionary&nbsp;defining<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;how&nbsp;to&nbsp;convert&nbsp;CSV&nbsp;to&nbsp;OCL-JSON<br>
+&nbsp;&nbsp;verbose&nbsp;&lt;int&gt;&nbsp;-&nbsp;0=off,&nbsp;1=some&nbsp;debug&nbsp;info,&nbsp;2=all&nbsp;debug&nbsp;info<br>
+&nbsp;&nbsp;include_type_attribute&nbsp;&lt;bool&gt;&nbsp;-&nbsp;Whether&nbsp;to&nbsp;include&nbsp;resource&nbsp;type&nbsp;attributes<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(e.g.&nbsp;"type":"Concept")&nbsp;in&nbsp;the&nbsp;output</tt></dd></dl>
+
+<dl><dt><a name="OclCsvToJsonConverter-format_identifier"><strong>format_identifier</strong></a>(self, unformatted_id, allow_underscore<font color="#909090">=False</font>)</dt><dd><tt>Format&nbsp;a&nbsp;string&nbsp;according&nbsp;to&nbsp;the&nbsp;OCL&nbsp;ID&nbsp;rules:&nbsp;Everything&nbsp;in&nbsp;INVALID_CHARS&nbsp;goes,<br>
+except&nbsp;that&nbsp;underscores&nbsp;are&nbsp;allowed&nbsp;for&nbsp;the&nbsp;concept_id</tt></dd></dl>
+
+<dl><dt><a name="OclCsvToJsonConverter-load_csv"><strong>load_csv</strong></a>(self, csv_filename)</dt></dl>
+
+<dl><dt><a name="OclCsvToJsonConverter-preprocess_csv_row"><strong>preprocess_csv_row</strong></a>(self, row, attr<font color="#909090">=None</font>)</dt><dd><tt>Method&nbsp;intended&nbsp;to&nbsp;be&nbsp;overwritten&nbsp;in&nbsp;classes&nbsp;that&nbsp;extend&nbsp;this&nbsp;object</tt></dd></dl>
+
+<dl><dt><a name="OclCsvToJsonConverter-process_by_definition"><strong>process_by_definition</strong></a>(self, num_rows<font color="#909090">=0</font>, attr<font color="#909090">=None</font>)</dt><dd><tt>Processes&nbsp;the&nbsp;CSV&nbsp;file&nbsp;by&nbsp;looping&nbsp;through&nbsp;it&nbsp;entirely&nbsp;once&nbsp;for&nbsp;each&nbsp;definition</tt></dd></dl>
+
+<dl><dt><a name="OclCsvToJsonConverter-process_by_row"><strong>process_by_row</strong></a>(self, num_rows<font color="#909090">=0</font>, attr<font color="#909090">=None</font>)</dt><dd><tt>Processes&nbsp;the&nbsp;CSV&nbsp;file&nbsp;applying&nbsp;all&nbsp;definitions&nbsp;to&nbsp;each&nbsp;row&nbsp;before&nbsp;moving&nbsp;to&nbsp;the&nbsp;next&nbsp;row</tt></dd></dl>
+
+<dl><dt><a name="OclCsvToJsonConverter-process_csv_row_with_definition"><strong>process_csv_row_with_definition</strong></a>(self, csv_row, csv_resource_def, attr<font color="#909090">=None</font>)</dt><dd><tt>Process&nbsp;individual&nbsp;CSV&nbsp;row&nbsp;with&nbsp;the&nbsp;provided&nbsp;CSV&nbsp;resource&nbsp;definition</tt></dd></dl>
+
+<dl><dt><a name="OclCsvToJsonConverter-process_reference"><strong>process_reference</strong></a>(self, csv_row, field_def)</dt><dd><tt>Processes&nbsp;a&nbsp;reference&nbsp;in&nbsp;the&nbsp;CSV&nbsp;row</tt></dd></dl>
+
+<dl><dt><a name="OclCsvToJsonConverter-set_resource_definitions"><strong>set_resource_definitions</strong></a>(self, csv_resource_definitions<font color="#909090">=None</font>)</dt></dl>
+
+<hr>
+Data and other attributes defined here:<br>
+<dl><dt><strong>DEF_CORE_FIELDS</strong> = 'core_fields'</dl>
+
+<dl><dt><strong>DEF_KEY_IS_ACTIVE</strong> = 'is_active'</dl>
+
+<dl><dt><strong>DEF_KEY_SKIP_IF_EMPTY</strong> = 'skip_if_empty_column'</dl>
+
+<dl><dt><strong>DEF_KEY_TRIGGER_COLUMN</strong> = '__trigger_column'</dl>
+
+<dl><dt><strong>DEF_KEY_TRIGGER_VALUE</strong> = '__trigger_value'</dl>
+
+<dl><dt><strong>DEF_KEY_VALUE_PAIRS</strong> = 'key_value_pairs'</dl>
+
+<dl><dt><strong>DEF_SUB_RESOURCES</strong> = 'subresources'</dl>
+
+<dl><dt><strong>EXTERNAL_MAPPING_ID</strong> = 'External'</dl>
+
+<dl><dt><strong>INTERNAL_MAPPING_ID</strong> = 'Internal'</dl>
+
+<dl><dt><strong>INVALID_CHARS</strong> = ' `~!@#$%^&amp;*()_+-=[]{}<font color="#c040c0">\\</font>|;:"<font color="#c040c0">\'</font>,/&lt;&gt;?'</dl>
+
+<dl><dt><strong>REPLACE_CHAR</strong> = '-'</dl>
+
+</td></tr></table></td></tr></table>
+</body></html>

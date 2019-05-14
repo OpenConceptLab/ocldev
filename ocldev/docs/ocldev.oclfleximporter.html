@@ -1,0 +1,588 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html><head><title>Python: module ocldev.oclfleximporter</title>
+<meta charset="utf-8">
+</head><body bgcolor="#f0f0f8">
+
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="heading">
+<tr bgcolor="#7799ee">
+<td valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial">&nbsp;<br><big><big><strong><a href="ocldev.html"><font color="#ffffff">ocldev</font></a>.oclfleximporter</strong></big></big></font></td
+><td align=right valign=bottom
+><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:/Users/jonathanpayne/Dropbox (Personal)/dev/ocldev/ocldev/oclfleximporter.py">/Users/jonathanpayne/Dropbox (Personal)/dev/ocldev/ocldev/oclfleximporter.py</a></font></td></tr></table>
+    <p><tt>OCL&nbsp;Flex&nbsp;Importer&nbsp;--<br>
+Script&nbsp;that&nbsp;uses&nbsp;the&nbsp;OCL&nbsp;API&nbsp;to&nbsp;import&nbsp;multiple&nbsp;resource&nbsp;types&nbsp;from&nbsp;a&nbsp;JSON&nbsp;lines&nbsp;file.<br>
+Configuration&nbsp;for&nbsp;individual&nbsp;resources&nbsp;can&nbsp;be&nbsp;set&nbsp;inline&nbsp;in&nbsp;the&nbsp;JSON.&nbsp;The&nbsp;bulk&nbsp;import<br>
+API&nbsp;exposes&nbsp;an&nbsp;endpoint&nbsp;to&nbsp;submit&nbsp;a&nbsp;JSON&nbsp;lines&nbsp;for&nbsp;higher&nbsp;performance&nbsp;asynchronous&nbsp;processing<br>
+directly&nbsp;on&nbsp;the&nbsp;OCL&nbsp;server.&nbsp;See&nbsp;oclapi&nbsp;Bulk&nbsp;Importing&nbsp;documentation&nbsp;for&nbsp;more&nbsp;information:<br>
+https://github.com/OpenConceptLab/oclapi/wiki/Bulk-Importing<br>
+&nbsp;<br>
+NOTE:&nbsp;For&nbsp;batch&nbsp;imports&nbsp;of&nbsp;concepts&nbsp;or&nbsp;mappings&nbsp;into&nbsp;a&nbsp;single&nbsp;source,&nbsp;the&nbsp;server-side&nbsp;import<br>
+script&nbsp;offers&nbsp;the&nbsp;highest&nbsp;performance&nbsp;alternative&nbsp;to&nbsp;this&nbsp;module.&nbsp;Note&nbsp;that&nbsp;support&nbsp;for&nbsp;the<br>
+server-side&nbsp;import&nbsp;will&nbsp;be&nbsp;discontinued&nbsp;as&nbsp;new&nbsp;functionality&nbsp;is&nbsp;added&nbsp;to&nbsp;the&nbsp;bulk&nbsp;import&nbsp;API.<br>
+&nbsp;<br>
+Resources&nbsp;currently&nbsp;supported&nbsp;by&nbsp;the&nbsp;OCL&nbsp;Flex&nbsp;Importer:<br>
+*&nbsp;Organizations<br>
+*&nbsp;Sources<br>
+*&nbsp;Collections<br>
+*&nbsp;Concepts<br>
+*&nbsp;Mappings<br>
+*&nbsp;References<br>
+*&nbsp;Source&nbsp;and&nbsp;Collection&nbsp;Versions<br>
+&nbsp;<br>
+Verbosity&nbsp;settings:<br>
+*&nbsp;0&nbsp;=&nbsp;show&nbsp;only&nbsp;responses&nbsp;from&nbsp;server<br>
+*&nbsp;1&nbsp;=&nbsp;show&nbsp;responses&nbsp;from&nbsp;server&nbsp;and&nbsp;all&nbsp;POSTs<br>
+*&nbsp;2&nbsp;=&nbsp;show&nbsp;everything&nbsp;except&nbsp;debug&nbsp;output<br>
+*&nbsp;3&nbsp;=&nbsp;show&nbsp;everything&nbsp;plus&nbsp;debug&nbsp;output<br>
+&nbsp;<br>
+Deviations&nbsp;from&nbsp;OCL&nbsp;API&nbsp;responses:<br>
+*&nbsp;Sources/Collections:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;"supported_locales"&nbsp;response&nbsp;is&nbsp;a&nbsp;list&nbsp;in&nbsp;OCL,&nbsp;but&nbsp;a&nbsp;comma-separated&nbsp;string<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;is&nbsp;in&nbsp;this&nbsp;script&nbsp;instead</tt></p>
+<p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#aa55cc">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Modules</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#aa55cc"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><table width="100%" summary="list"><tr><td width="25%" valign=top><a href="json.html">json</a><br>
+<a href="requests.html">requests</a><br>
+</td><td width="25%" valign=top><a href="sys.html">sys</a><br>
+<a href="time.html">time</a><br>
+</td><td width="25%" valign=top><a href="urllib.html">urllib</a><br>
+</td><td width="25%" valign=top></td></tr></table></td></tr></table><p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ee77aa">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Classes</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#ee77aa"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><dl>
+<dt><font face="helvetica, arial"><a href="__builtin__.html#object">__builtin__.object</a>
+</font></dt><dd>
+<dl>
+<dt><font face="helvetica, arial"><a href="ocldev.oclfleximporter.html#OclBulkImporter">OclBulkImporter</a>
+</font></dt><dt><font face="helvetica, arial"><a href="ocldev.oclfleximporter.html#OclFlexImporter">OclFlexImporter</a>
+</font></dt><dt><font face="helvetica, arial"><a href="ocldev.oclfleximporter.html#OclImportResults">OclImportResults</a>
+</font></dt></dl>
+</dd>
+<dt><font face="helvetica, arial"><a href="exceptions.html#Exception">exceptions.Exception</a>(<a href="exceptions.html#BaseException">exceptions.BaseException</a>)
+</font></dt><dd>
+<dl>
+<dt><font face="helvetica, arial"><a href="ocldev.oclfleximporter.html#OclImportError">OclImportError</a>
+</font></dt><dd>
+<dl>
+<dt><font face="helvetica, arial"><a href="ocldev.oclfleximporter.html#InvalidObjectDefinition">InvalidObjectDefinition</a>
+</font></dt><dt><font face="helvetica, arial"><a href="ocldev.oclfleximporter.html#InvalidOwnerError">InvalidOwnerError</a>
+</font></dt><dt><font face="helvetica, arial"><a href="ocldev.oclfleximporter.html#InvalidRepositoryError">InvalidRepositoryError</a>
+</font></dt><dt><font face="helvetica, arial"><a href="ocldev.oclfleximporter.html#UnexpectedStatusCodeError">UnexpectedStatusCodeError</a>
+</font></dt></dl>
+</dd>
+</dl>
+</dd>
+</dl>
+ <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="InvalidObjectDefinition">class <strong>InvalidObjectDefinition</strong></a>(<a href="ocldev.oclfleximporter.html#OclImportError">OclImportError</a>)</font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt><a href="exceptions.html#Exception">Exception</a>&nbsp;raised&nbsp;when&nbsp;<a href="__builtin__.html#object">object</a>&nbsp;definition&nbsp;invalid<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%"><dl><dt>Method resolution order:</dt>
+<dd><a href="ocldev.oclfleximporter.html#InvalidObjectDefinition">InvalidObjectDefinition</a></dd>
+<dd><a href="ocldev.oclfleximporter.html#OclImportError">OclImportError</a></dd>
+<dd><a href="exceptions.html#Exception">exceptions.Exception</a></dd>
+<dd><a href="exceptions.html#BaseException">exceptions.BaseException</a></dd>
+<dd><a href="__builtin__.html#object">__builtin__.object</a></dd>
+</dl>
+<hr>
+Methods defined here:<br>
+<dl><dt><a name="InvalidObjectDefinition-__init__"><strong>__init__</strong></a>(self, expression, message)</dt></dl>
+
+<hr>
+Data descriptors inherited from <a href="ocldev.oclfleximporter.html#OclImportError">OclImportError</a>:<br>
+<dl><dt><strong>__weakref__</strong></dt>
+<dd><tt>list&nbsp;of&nbsp;weak&nbsp;references&nbsp;to&nbsp;the&nbsp;object&nbsp;(if&nbsp;defined)</tt></dd>
+</dl>
+<hr>
+Data and other attributes inherited from <a href="exceptions.html#Exception">exceptions.Exception</a>:<br>
+<dl><dt><strong>__new__</strong> = &lt;built-in method __new__ of type object&gt;<dd><tt>T.<a href="#InvalidObjectDefinition-__new__">__new__</a>(S,&nbsp;...)&nbsp;-&gt;&nbsp;a&nbsp;new&nbsp;<a href="__builtin__.html#object">object</a>&nbsp;with&nbsp;type&nbsp;S,&nbsp;a&nbsp;subtype&nbsp;of&nbsp;T</tt></dl>
+
+<hr>
+Methods inherited from <a href="exceptions.html#BaseException">exceptions.BaseException</a>:<br>
+<dl><dt><a name="InvalidObjectDefinition-__delattr__"><strong>__delattr__</strong></a>(...)</dt><dd><tt>x.<a href="#InvalidObjectDefinition-__delattr__">__delattr__</a>('name')&nbsp;&lt;==&gt;&nbsp;del&nbsp;x.name</tt></dd></dl>
+
+<dl><dt><a name="InvalidObjectDefinition-__getattribute__"><strong>__getattribute__</strong></a>(...)</dt><dd><tt>x.<a href="#InvalidObjectDefinition-__getattribute__">__getattribute__</a>('name')&nbsp;&lt;==&gt;&nbsp;x.name</tt></dd></dl>
+
+<dl><dt><a name="InvalidObjectDefinition-__getitem__"><strong>__getitem__</strong></a>(...)</dt><dd><tt>x.<a href="#InvalidObjectDefinition-__getitem__">__getitem__</a>(y)&nbsp;&lt;==&gt;&nbsp;x[y]</tt></dd></dl>
+
+<dl><dt><a name="InvalidObjectDefinition-__getslice__"><strong>__getslice__</strong></a>(...)</dt><dd><tt>x.<a href="#InvalidObjectDefinition-__getslice__">__getslice__</a>(i,&nbsp;j)&nbsp;&lt;==&gt;&nbsp;x[i:j]<br>
+&nbsp;<br>
+Use&nbsp;of&nbsp;negative&nbsp;indices&nbsp;is&nbsp;not&nbsp;supported.</tt></dd></dl>
+
+<dl><dt><a name="InvalidObjectDefinition-__reduce__"><strong>__reduce__</strong></a>(...)</dt></dl>
+
+<dl><dt><a name="InvalidObjectDefinition-__repr__"><strong>__repr__</strong></a>(...)</dt><dd><tt>x.<a href="#InvalidObjectDefinition-__repr__">__repr__</a>()&nbsp;&lt;==&gt;&nbsp;repr(x)</tt></dd></dl>
+
+<dl><dt><a name="InvalidObjectDefinition-__setattr__"><strong>__setattr__</strong></a>(...)</dt><dd><tt>x.<a href="#InvalidObjectDefinition-__setattr__">__setattr__</a>('name',&nbsp;value)&nbsp;&lt;==&gt;&nbsp;x.name&nbsp;=&nbsp;value</tt></dd></dl>
+
+<dl><dt><a name="InvalidObjectDefinition-__setstate__"><strong>__setstate__</strong></a>(...)</dt></dl>
+
+<dl><dt><a name="InvalidObjectDefinition-__str__"><strong>__str__</strong></a>(...)</dt><dd><tt>x.<a href="#InvalidObjectDefinition-__str__">__str__</a>()&nbsp;&lt;==&gt;&nbsp;str(x)</tt></dd></dl>
+
+<dl><dt><a name="InvalidObjectDefinition-__unicode__"><strong>__unicode__</strong></a>(...)</dt></dl>
+
+<hr>
+Data descriptors inherited from <a href="exceptions.html#BaseException">exceptions.BaseException</a>:<br>
+<dl><dt><strong>__dict__</strong></dt>
+</dl>
+<dl><dt><strong>args</strong></dt>
+</dl>
+<dl><dt><strong>message</strong></dt>
+</dl>
+</td></tr></table> <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="InvalidOwnerError">class <strong>InvalidOwnerError</strong></a>(<a href="ocldev.oclfleximporter.html#OclImportError">OclImportError</a>)</font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt><a href="exceptions.html#Exception">Exception</a>&nbsp;raised&nbsp;when&nbsp;owner&nbsp;information&nbsp;is&nbsp;invalid<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%"><dl><dt>Method resolution order:</dt>
+<dd><a href="ocldev.oclfleximporter.html#InvalidOwnerError">InvalidOwnerError</a></dd>
+<dd><a href="ocldev.oclfleximporter.html#OclImportError">OclImportError</a></dd>
+<dd><a href="exceptions.html#Exception">exceptions.Exception</a></dd>
+<dd><a href="exceptions.html#BaseException">exceptions.BaseException</a></dd>
+<dd><a href="__builtin__.html#object">__builtin__.object</a></dd>
+</dl>
+<hr>
+Methods defined here:<br>
+<dl><dt><a name="InvalidOwnerError-__init__"><strong>__init__</strong></a>(self, expression, message)</dt></dl>
+
+<hr>
+Data descriptors inherited from <a href="ocldev.oclfleximporter.html#OclImportError">OclImportError</a>:<br>
+<dl><dt><strong>__weakref__</strong></dt>
+<dd><tt>list&nbsp;of&nbsp;weak&nbsp;references&nbsp;to&nbsp;the&nbsp;object&nbsp;(if&nbsp;defined)</tt></dd>
+</dl>
+<hr>
+Data and other attributes inherited from <a href="exceptions.html#Exception">exceptions.Exception</a>:<br>
+<dl><dt><strong>__new__</strong> = &lt;built-in method __new__ of type object&gt;<dd><tt>T.<a href="#InvalidOwnerError-__new__">__new__</a>(S,&nbsp;...)&nbsp;-&gt;&nbsp;a&nbsp;new&nbsp;<a href="__builtin__.html#object">object</a>&nbsp;with&nbsp;type&nbsp;S,&nbsp;a&nbsp;subtype&nbsp;of&nbsp;T</tt></dl>
+
+<hr>
+Methods inherited from <a href="exceptions.html#BaseException">exceptions.BaseException</a>:<br>
+<dl><dt><a name="InvalidOwnerError-__delattr__"><strong>__delattr__</strong></a>(...)</dt><dd><tt>x.<a href="#InvalidOwnerError-__delattr__">__delattr__</a>('name')&nbsp;&lt;==&gt;&nbsp;del&nbsp;x.name</tt></dd></dl>
+
+<dl><dt><a name="InvalidOwnerError-__getattribute__"><strong>__getattribute__</strong></a>(...)</dt><dd><tt>x.<a href="#InvalidOwnerError-__getattribute__">__getattribute__</a>('name')&nbsp;&lt;==&gt;&nbsp;x.name</tt></dd></dl>
+
+<dl><dt><a name="InvalidOwnerError-__getitem__"><strong>__getitem__</strong></a>(...)</dt><dd><tt>x.<a href="#InvalidOwnerError-__getitem__">__getitem__</a>(y)&nbsp;&lt;==&gt;&nbsp;x[y]</tt></dd></dl>
+
+<dl><dt><a name="InvalidOwnerError-__getslice__"><strong>__getslice__</strong></a>(...)</dt><dd><tt>x.<a href="#InvalidOwnerError-__getslice__">__getslice__</a>(i,&nbsp;j)&nbsp;&lt;==&gt;&nbsp;x[i:j]<br>
+&nbsp;<br>
+Use&nbsp;of&nbsp;negative&nbsp;indices&nbsp;is&nbsp;not&nbsp;supported.</tt></dd></dl>
+
+<dl><dt><a name="InvalidOwnerError-__reduce__"><strong>__reduce__</strong></a>(...)</dt></dl>
+
+<dl><dt><a name="InvalidOwnerError-__repr__"><strong>__repr__</strong></a>(...)</dt><dd><tt>x.<a href="#InvalidOwnerError-__repr__">__repr__</a>()&nbsp;&lt;==&gt;&nbsp;repr(x)</tt></dd></dl>
+
+<dl><dt><a name="InvalidOwnerError-__setattr__"><strong>__setattr__</strong></a>(...)</dt><dd><tt>x.<a href="#InvalidOwnerError-__setattr__">__setattr__</a>('name',&nbsp;value)&nbsp;&lt;==&gt;&nbsp;x.name&nbsp;=&nbsp;value</tt></dd></dl>
+
+<dl><dt><a name="InvalidOwnerError-__setstate__"><strong>__setstate__</strong></a>(...)</dt></dl>
+
+<dl><dt><a name="InvalidOwnerError-__str__"><strong>__str__</strong></a>(...)</dt><dd><tt>x.<a href="#InvalidOwnerError-__str__">__str__</a>()&nbsp;&lt;==&gt;&nbsp;str(x)</tt></dd></dl>
+
+<dl><dt><a name="InvalidOwnerError-__unicode__"><strong>__unicode__</strong></a>(...)</dt></dl>
+
+<hr>
+Data descriptors inherited from <a href="exceptions.html#BaseException">exceptions.BaseException</a>:<br>
+<dl><dt><strong>__dict__</strong></dt>
+</dl>
+<dl><dt><strong>args</strong></dt>
+</dl>
+<dl><dt><strong>message</strong></dt>
+</dl>
+</td></tr></table> <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="InvalidRepositoryError">class <strong>InvalidRepositoryError</strong></a>(<a href="ocldev.oclfleximporter.html#OclImportError">OclImportError</a>)</font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt><a href="exceptions.html#Exception">Exception</a>&nbsp;raised&nbsp;when&nbsp;repository&nbsp;information&nbsp;is&nbsp;invalid<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%"><dl><dt>Method resolution order:</dt>
+<dd><a href="ocldev.oclfleximporter.html#InvalidRepositoryError">InvalidRepositoryError</a></dd>
+<dd><a href="ocldev.oclfleximporter.html#OclImportError">OclImportError</a></dd>
+<dd><a href="exceptions.html#Exception">exceptions.Exception</a></dd>
+<dd><a href="exceptions.html#BaseException">exceptions.BaseException</a></dd>
+<dd><a href="__builtin__.html#object">__builtin__.object</a></dd>
+</dl>
+<hr>
+Methods defined here:<br>
+<dl><dt><a name="InvalidRepositoryError-__init__"><strong>__init__</strong></a>(self, expression, message)</dt></dl>
+
+<hr>
+Data descriptors inherited from <a href="ocldev.oclfleximporter.html#OclImportError">OclImportError</a>:<br>
+<dl><dt><strong>__weakref__</strong></dt>
+<dd><tt>list&nbsp;of&nbsp;weak&nbsp;references&nbsp;to&nbsp;the&nbsp;object&nbsp;(if&nbsp;defined)</tt></dd>
+</dl>
+<hr>
+Data and other attributes inherited from <a href="exceptions.html#Exception">exceptions.Exception</a>:<br>
+<dl><dt><strong>__new__</strong> = &lt;built-in method __new__ of type object&gt;<dd><tt>T.<a href="#InvalidRepositoryError-__new__">__new__</a>(S,&nbsp;...)&nbsp;-&gt;&nbsp;a&nbsp;new&nbsp;<a href="__builtin__.html#object">object</a>&nbsp;with&nbsp;type&nbsp;S,&nbsp;a&nbsp;subtype&nbsp;of&nbsp;T</tt></dl>
+
+<hr>
+Methods inherited from <a href="exceptions.html#BaseException">exceptions.BaseException</a>:<br>
+<dl><dt><a name="InvalidRepositoryError-__delattr__"><strong>__delattr__</strong></a>(...)</dt><dd><tt>x.<a href="#InvalidRepositoryError-__delattr__">__delattr__</a>('name')&nbsp;&lt;==&gt;&nbsp;del&nbsp;x.name</tt></dd></dl>
+
+<dl><dt><a name="InvalidRepositoryError-__getattribute__"><strong>__getattribute__</strong></a>(...)</dt><dd><tt>x.<a href="#InvalidRepositoryError-__getattribute__">__getattribute__</a>('name')&nbsp;&lt;==&gt;&nbsp;x.name</tt></dd></dl>
+
+<dl><dt><a name="InvalidRepositoryError-__getitem__"><strong>__getitem__</strong></a>(...)</dt><dd><tt>x.<a href="#InvalidRepositoryError-__getitem__">__getitem__</a>(y)&nbsp;&lt;==&gt;&nbsp;x[y]</tt></dd></dl>
+
+<dl><dt><a name="InvalidRepositoryError-__getslice__"><strong>__getslice__</strong></a>(...)</dt><dd><tt>x.<a href="#InvalidRepositoryError-__getslice__">__getslice__</a>(i,&nbsp;j)&nbsp;&lt;==&gt;&nbsp;x[i:j]<br>
+&nbsp;<br>
+Use&nbsp;of&nbsp;negative&nbsp;indices&nbsp;is&nbsp;not&nbsp;supported.</tt></dd></dl>
+
+<dl><dt><a name="InvalidRepositoryError-__reduce__"><strong>__reduce__</strong></a>(...)</dt></dl>
+
+<dl><dt><a name="InvalidRepositoryError-__repr__"><strong>__repr__</strong></a>(...)</dt><dd><tt>x.<a href="#InvalidRepositoryError-__repr__">__repr__</a>()&nbsp;&lt;==&gt;&nbsp;repr(x)</tt></dd></dl>
+
+<dl><dt><a name="InvalidRepositoryError-__setattr__"><strong>__setattr__</strong></a>(...)</dt><dd><tt>x.<a href="#InvalidRepositoryError-__setattr__">__setattr__</a>('name',&nbsp;value)&nbsp;&lt;==&gt;&nbsp;x.name&nbsp;=&nbsp;value</tt></dd></dl>
+
+<dl><dt><a name="InvalidRepositoryError-__setstate__"><strong>__setstate__</strong></a>(...)</dt></dl>
+
+<dl><dt><a name="InvalidRepositoryError-__str__"><strong>__str__</strong></a>(...)</dt><dd><tt>x.<a href="#InvalidRepositoryError-__str__">__str__</a>()&nbsp;&lt;==&gt;&nbsp;str(x)</tt></dd></dl>
+
+<dl><dt><a name="InvalidRepositoryError-__unicode__"><strong>__unicode__</strong></a>(...)</dt></dl>
+
+<hr>
+Data descriptors inherited from <a href="exceptions.html#BaseException">exceptions.BaseException</a>:<br>
+<dl><dt><strong>__dict__</strong></dt>
+</dl>
+<dl><dt><strong>args</strong></dt>
+</dl>
+<dl><dt><strong>message</strong></dt>
+</dl>
+</td></tr></table> <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="OclBulkImporter">class <strong>OclBulkImporter</strong></a>(<a href="__builtin__.html#object">__builtin__.object</a>)</font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt>Helper&nbsp;class&nbsp;to&nbsp;use&nbsp;the&nbsp;OCL&nbsp;bulk&nbsp;import&nbsp;API&nbsp;to&nbsp;process&nbsp;an&nbsp;OCL-formatted&nbsp;JSON&nbsp;lines&nbsp;file.<br>
+The&nbsp;OCL&nbsp;bulk&nbsp;import&nbsp;API&nbsp;simply&nbsp;runs&nbsp;the&nbsp;<a href="#OclFlexImporter">OclFlexImporter</a>&nbsp;<a href="__builtin__.html#object">object</a>&nbsp;asynchronously&nbsp;on&nbsp;the&nbsp;server<br>
+for&nbsp;much&nbsp;higher&nbsp;performance&nbsp;processing.<br>
+&nbsp;<br>
+Currently,&nbsp;bulk&nbsp;import&nbsp;can&nbsp;only&nbsp;be&nbsp;run&nbsp;in&nbsp;live&nbsp;mode&nbsp;(test_mode=False)&nbsp;with&nbsp;limit&nbsp;set&nbsp;to&nbsp;zero<br>
+and&nbsp;updating&nbsp;objects&nbsp;set&nbsp;to&nbsp;False.<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%">Static methods defined here:<br>
+<dl><dt><a name="OclBulkImporter-get_bulk_import_results"><strong>get_bulk_import_results</strong></a>(task_id<font color="#909090">=None</font>, api_url_root<font color="#909090">=''</font>, api_token<font color="#909090">=''</font>, max_wait_seconds<font color="#909090">=0</font>, delay_seconds<font color="#909090">=15</font>)</dt><dd><tt>Get&nbsp;an&nbsp;<a href="#OclImportResults">OclImportResults</a>&nbsp;<a href="__builtin__.html#object">object</a>&nbsp;representing&nbsp;the&nbsp;results&nbsp;of&nbsp;a&nbsp;bulk&nbsp;import&nbsp;API&nbsp;process<br>
+submit&nbsp;to&nbsp;OCL&nbsp;as&nbsp;identified&nbsp;by&nbsp;a&nbsp;task_id.<br>
+If&nbsp;the&nbsp;import&nbsp;is&nbsp;still&nbsp;being&nbsp;processed,&nbsp;the&nbsp;method&nbsp;will&nbsp;continue&nbsp;to&nbsp;try&nbsp;after<br>
+delay_seconds&nbsp;(default&nbsp;is&nbsp;15&nbsp;seconds)&nbsp;until&nbsp;the&nbsp;time&nbsp;elapsed&nbsp;is&nbsp;greater&nbsp;than<br>
+max_wait_seconds.&nbsp;delay_seconds&nbsp;must&nbsp;be&nbsp;greater&nbsp;than&nbsp;or&nbsp;equal&nbsp;to&nbsp;5&nbsp;seconds.&nbsp;Set<br>
+max_wait_seconds&nbsp;to&nbsp;zero&nbsp;(the&nbsp;default)&nbsp;to&nbsp;only&nbsp;request&nbsp;results&nbsp;once.&nbsp;max_wait_seconds<br>
+must&nbsp;be&nbsp;less&nbsp;than&nbsp;<a href="#OclBulkImporter">OclBulkImporter</a>.OCL_BULK_IMPORT_MAX_WAIT_SECONDS.</tt></dd></dl>
+
+<dl><dt><a name="OclBulkImporter-post"><strong>post</strong></a>(file_path<font color="#909090">=''</font>, input_list<font color="#909090">=None</font>, api_url_root<font color="#909090">=''</font>, api_token<font color="#909090">=''</font>)</dt><dd><tt>Post&nbsp;the&nbsp;import&nbsp;to&nbsp;the&nbsp;OCL&nbsp;bulk&nbsp;import&nbsp;API&nbsp;endpoint&nbsp;and&nbsp;return&nbsp;the&nbsp;request&nbsp;<a href="__builtin__.html#object">object</a></tt></dd></dl>
+
+<hr>
+Data descriptors defined here:<br>
+<dl><dt><strong>__dict__</strong></dt>
+<dd><tt>dictionary&nbsp;for&nbsp;instance&nbsp;variables&nbsp;(if&nbsp;defined)</tt></dd>
+</dl>
+<dl><dt><strong>__weakref__</strong></dt>
+<dd><tt>list&nbsp;of&nbsp;weak&nbsp;references&nbsp;to&nbsp;the&nbsp;object&nbsp;(if&nbsp;defined)</tt></dd>
+</dl>
+<hr>
+Data and other attributes defined here:<br>
+<dl><dt><strong>OCL_BULK_IMPORT_API_ENDPOINT</strong> = '/manage/bulkimport/'</dl>
+
+<dl><dt><strong>OCL_BULK_IMPORT_MAX_WAIT_SECONDS</strong> = 900</dl>
+
+<dl><dt><strong>OCL_BULK_IMPORT_MINIMUM_DELAY_SECONDS</strong> = 5</dl>
+
+</td></tr></table> <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="OclFlexImporter">class <strong>OclFlexImporter</strong></a>(<a href="__builtin__.html#object">__builtin__.object</a>)</font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt>Class&nbsp;to&nbsp;flexibly&nbsp;import&nbsp;multiple&nbsp;resource&nbsp;types&nbsp;into&nbsp;OCL&nbsp;from&nbsp;JSON&nbsp;lines&nbsp;files&nbsp;via<br>
+the&nbsp;OCL&nbsp;API&nbsp;rather&nbsp;than&nbsp;the&nbsp;batch&nbsp;importer.<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%">Methods defined here:<br>
+<dl><dt><a name="OclFlexImporter-__init__"><strong>__init__</strong></a>(self, file_path<font color="#909090">=''</font>, input_list<font color="#909090">=None</font>, api_url_root<font color="#909090">=''</font>, api_token<font color="#909090">=''</font>, limit<font color="#909090">=0</font>, test_mode<font color="#909090">=False</font>, verbosity<font color="#909090">=1</font>, do_update_if_exists<font color="#909090">=False</font>, import_delay<font color="#909090">=0</font>)</dt><dd><tt>Initialize&nbsp;this&nbsp;<a href="__builtin__.html#object">object</a></tt></dd></dl>
+
+<dl><dt><a name="OclFlexImporter-does_mapping_exist"><strong>does_mapping_exist</strong></a>(self, obj_url, obj)</dt><dd><tt>Returns&nbsp;whether&nbsp;the&nbsp;specified&nbsp;mapping&nbsp;already&nbsp;exists&nbsp;--<br>
+Equivalent&nbsp;mapping&nbsp;must&nbsp;have&nbsp;matching&nbsp;source,&nbsp;from_concept,&nbsp;to_concept,&nbsp;and&nbsp;map_type</tt></dd></dl>
+
+<dl><dt><a name="OclFlexImporter-does_object_exist"><strong>does_object_exist</strong></a>(self, obj_url, use_cache<font color="#909090">=True</font>)</dt><dd><tt>Returns&nbsp;whether&nbsp;an&nbsp;<a href="__builtin__.html#object">object</a>&nbsp;at&nbsp;the&nbsp;specified&nbsp;URL&nbsp;already&nbsp;exists</tt></dd></dl>
+
+<dl><dt><a name="OclFlexImporter-does_reference_exist"><strong>does_reference_exist</strong></a>(self, obj_url, obj)</dt><dd><tt>Returns&nbsp;whether&nbsp;the&nbsp;specified&nbsp;reference&nbsp;already&nbsp;exists</tt></dd></dl>
+
+<dl><dt><a name="OclFlexImporter-find_nth"><strong>find_nth</strong></a>(self, haystack, needle, n)</dt><dd><tt>Find&nbsp;nth&nbsp;occurrence&nbsp;of&nbsp;a&nbsp;substring&nbsp;within&nbsp;a&nbsp;string</tt></dd></dl>
+
+<dl><dt><a name="OclFlexImporter-load_from_file"><strong>load_from_file</strong></a>(self, file_path)</dt><dd><tt>Load&nbsp;the&nbsp;OCL-formatted&nbsp;JSON&nbsp;file&nbsp;from&nbsp;the&nbsp;specified&nbsp;path</tt></dd></dl>
+
+<dl><dt><a name="OclFlexImporter-log"><strong>log</strong></a>(self, *args)</dt><dd><tt>Output&nbsp;log&nbsp;information</tt></dd></dl>
+
+<dl><dt><a name="OclFlexImporter-log_settings"><strong>log_settings</strong></a>(self)</dt><dd><tt>Output&nbsp;log&nbsp;of&nbsp;the&nbsp;<a href="__builtin__.html#object">object</a>&nbsp;settings</tt></dd></dl>
+
+<dl><dt><a name="OclFlexImporter-process"><strong>process</strong></a>(self)</dt><dd><tt>Imports&nbsp;a&nbsp;JSON-lines&nbsp;file&nbsp;using&nbsp;OCL&nbsp;API<br>
+:return:&nbsp;int&nbsp;Number&nbsp;of&nbsp;JSON&nbsp;lines&nbsp;processed</tt></dd></dl>
+
+<dl><dt><a name="OclFlexImporter-process_object"><strong>process_object</strong></a>(self, obj_type, obj)</dt><dd><tt>Processes&nbsp;an&nbsp;individual&nbsp;document&nbsp;in&nbsp;the&nbsp;import&nbsp;file</tt></dd></dl>
+
+<dl><dt><a name="OclFlexImporter-update_or_create"><strong>update_or_create</strong></a>(self, obj_type<font color="#909090">=''</font>, obj_id<font color="#909090">=''</font>, obj_owner_url<font color="#909090">=''</font>, obj_repo_url<font color="#909090">=''</font>, obj_url<font color="#909090">=''</font>, new_obj_url<font color="#909090">=''</font>, obj_already_exists<font color="#909090">=False</font>, obj<font color="#909090">=None</font>, obj_not_allowed<font color="#909090">=None</font>, query_params<font color="#909090">=None</font>)</dt><dd><tt>Posts&nbsp;an&nbsp;<a href="__builtin__.html#object">object</a>&nbsp;to&nbsp;the&nbsp;OCL&nbsp;API&nbsp;as&nbsp;either&nbsp;an&nbsp;update&nbsp;or&nbsp;create</tt></dd></dl>
+
+<hr>
+Data descriptors defined here:<br>
+<dl><dt><strong>__dict__</strong></dt>
+<dd><tt>dictionary&nbsp;for&nbsp;instance&nbsp;variables&nbsp;(if&nbsp;defined)</tt></dd>
+</dl>
+<dl><dt><strong>__weakref__</strong></dt>
+<dd><tt>list&nbsp;of&nbsp;weak&nbsp;references&nbsp;to&nbsp;the&nbsp;object&nbsp;(if&nbsp;defined)</tt></dd>
+</dl>
+<hr>
+Data and other attributes defined here:<br>
+<dl><dt><strong>ACTION_TYPE_DELETE</strong> = 'delete'</dl>
+
+<dl><dt><strong>ACTION_TYPE_NEW</strong> = 'new'</dl>
+
+<dl><dt><strong>ACTION_TYPE_OTHER</strong> = 'other'</dl>
+
+<dl><dt><strong>ACTION_TYPE_RETIRE</strong> = 'retire'</dl>
+
+<dl><dt><strong>ACTION_TYPE_SKIP</strong> = 'skip'</dl>
+
+<dl><dt><strong>ACTION_TYPE_UPDATE</strong> = 'update'</dl>
+
+<dl><dt><strong>EXTERNAL_MAPPING</strong> = 2</dl>
+
+<dl><dt><strong>INTERNAL_MAPPING</strong> = 1</dl>
+
+<dl><dt><strong>OBJ_TYPE_COLLECTION</strong> = 'Collection'</dl>
+
+<dl><dt><strong>OBJ_TYPE_COLLECTION_VERSION</strong> = 'Collection Version'</dl>
+
+<dl><dt><strong>OBJ_TYPE_CONCEPT</strong> = 'Concept'</dl>
+
+<dl><dt><strong>OBJ_TYPE_MAPPING</strong> = 'Mapping'</dl>
+
+<dl><dt><strong>OBJ_TYPE_ORGANIZATION</strong> = 'Organization'</dl>
+
+<dl><dt><strong>OBJ_TYPE_REFERENCE</strong> = 'Reference'</dl>
+
+<dl><dt><strong>OBJ_TYPE_SOURCE</strong> = 'Source'</dl>
+
+<dl><dt><strong>OBJ_TYPE_SOURCE_VERSION</strong> = 'Source Version'</dl>
+
+<dl><dt><strong>OBJ_TYPE_USER</strong> = 'User'</dl>
+
+<dl><dt><strong>obj_def</strong> = {'Collection': {'allowed_fields': ['id', 'short_code', 'name', 'full_name', 'description', 'collection_type', 'custom_validation_schema', 'public_access', 'default_locale', 'supported_locales', 'website', 'extras', 'external_id'], 'create_method': 'POST', 'has_collection': False, 'has_owner': True, 'has_source': False, 'id_field': 'id', 'update_method': 'POST', 'url_name': 'collections'}, 'Collection Version': {'allowed_fields': ['id', 'external_id', 'description', 'released'], 'create_method': 'POST', 'has_collection': True, 'has_owner': True, 'has_source': False, 'id_field': 'id', 'omit_resource_name_on_get': True, 'update_method': 'POST', 'url_name': 'versions'}, 'Concept': {'allowed_fields': ['id', 'external_id', 'concept_class', 'datatype', 'names', 'descriptions', 'retired', 'extras'], 'create_method': 'POST', 'has_collection': False, 'has_owner': True, 'has_source': True, 'id_field': 'id', 'update_method': 'PUT', 'url_name': 'concepts'}, 'Mapping': {'allowed_fields': ['id', 'map_type', 'from_concept_url', 'to_source_url', 'to_concept_url', 'to_concept_code', 'to_concept_name', 'extras', 'external_id'], 'create_method': 'POST', 'has_collection': False, 'has_owner': True, 'has_source': True, 'id_field': 'id', 'update_method': 'POST', 'url_name': 'mappings'}, 'Organization': {'allowed_fields': ['id', 'company', 'extras', 'location', 'name', 'public_access', 'extras', 'website'], 'create_method': 'POST', 'has_collection': False, 'has_owner': False, 'has_source': False, 'id_field': 'id', 'update_method': 'POST', 'url_name': 'orgs'}, 'Reference': {'allowed_fields': ['data'], 'create_method': 'PUT', 'has_collection': True, 'has_owner': True, 'has_source': False, 'update_method': None, 'url_name': 'references'}, 'Source': {'allowed_fields': ['id', 'short_code', 'name', 'full_name', 'description', 'source_type', 'custom_validation_schema', 'public_access', 'default_locale', 'supported_locales', 'website', 'extras', 'external_id'], 'create_method': 'POST', 'has_collection': False, 'has_owner': True, 'has_source': False, 'id_field': 'id', 'update_method': 'POST', 'url_name': 'sources'}, 'Source Version': {'allowed_fields': ['id', 'external_id', 'description', 'released'], 'create_method': 'POST', 'has_collection': False, 'has_owner': True, 'has_source': True, 'id_field': 'id', 'omit_resource_name_on_get': True, 'update_method': 'POST', 'url_name': 'versions'}, 'User': {'allowed_fields': ['username', 'name', 'email', 'company', 'location', 'preferred_locale'], 'create_method': 'POST', 'has_collection': False, 'has_owner': False, 'has_source': False, 'id_field': 'username', 'update_method': 'POST', 'url_name': 'users'}}</dl>
+
+</td></tr></table> <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="OclImportError">class <strong>OclImportError</strong></a>(<a href="exceptions.html#Exception">exceptions.Exception</a>)</font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt>Base&nbsp;exception&nbsp;for&nbsp;this&nbsp;module<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%"><dl><dt>Method resolution order:</dt>
+<dd><a href="ocldev.oclfleximporter.html#OclImportError">OclImportError</a></dd>
+<dd><a href="exceptions.html#Exception">exceptions.Exception</a></dd>
+<dd><a href="exceptions.html#BaseException">exceptions.BaseException</a></dd>
+<dd><a href="__builtin__.html#object">__builtin__.object</a></dd>
+</dl>
+<hr>
+Data descriptors defined here:<br>
+<dl><dt><strong>__weakref__</strong></dt>
+<dd><tt>list&nbsp;of&nbsp;weak&nbsp;references&nbsp;to&nbsp;the&nbsp;object&nbsp;(if&nbsp;defined)</tt></dd>
+</dl>
+<hr>
+Methods inherited from <a href="exceptions.html#Exception">exceptions.Exception</a>:<br>
+<dl><dt><a name="OclImportError-__init__"><strong>__init__</strong></a>(...)</dt><dd><tt>x.<a href="#OclImportError-__init__">__init__</a>(...)&nbsp;initializes&nbsp;x;&nbsp;see&nbsp;help(type(x))&nbsp;for&nbsp;signature</tt></dd></dl>
+
+<hr>
+Data and other attributes inherited from <a href="exceptions.html#Exception">exceptions.Exception</a>:<br>
+<dl><dt><strong>__new__</strong> = &lt;built-in method __new__ of type object&gt;<dd><tt>T.<a href="#OclImportError-__new__">__new__</a>(S,&nbsp;...)&nbsp;-&gt;&nbsp;a&nbsp;new&nbsp;<a href="__builtin__.html#object">object</a>&nbsp;with&nbsp;type&nbsp;S,&nbsp;a&nbsp;subtype&nbsp;of&nbsp;T</tt></dl>
+
+<hr>
+Methods inherited from <a href="exceptions.html#BaseException">exceptions.BaseException</a>:<br>
+<dl><dt><a name="OclImportError-__delattr__"><strong>__delattr__</strong></a>(...)</dt><dd><tt>x.<a href="#OclImportError-__delattr__">__delattr__</a>('name')&nbsp;&lt;==&gt;&nbsp;del&nbsp;x.name</tt></dd></dl>
+
+<dl><dt><a name="OclImportError-__getattribute__"><strong>__getattribute__</strong></a>(...)</dt><dd><tt>x.<a href="#OclImportError-__getattribute__">__getattribute__</a>('name')&nbsp;&lt;==&gt;&nbsp;x.name</tt></dd></dl>
+
+<dl><dt><a name="OclImportError-__getitem__"><strong>__getitem__</strong></a>(...)</dt><dd><tt>x.<a href="#OclImportError-__getitem__">__getitem__</a>(y)&nbsp;&lt;==&gt;&nbsp;x[y]</tt></dd></dl>
+
+<dl><dt><a name="OclImportError-__getslice__"><strong>__getslice__</strong></a>(...)</dt><dd><tt>x.<a href="#OclImportError-__getslice__">__getslice__</a>(i,&nbsp;j)&nbsp;&lt;==&gt;&nbsp;x[i:j]<br>
+&nbsp;<br>
+Use&nbsp;of&nbsp;negative&nbsp;indices&nbsp;is&nbsp;not&nbsp;supported.</tt></dd></dl>
+
+<dl><dt><a name="OclImportError-__reduce__"><strong>__reduce__</strong></a>(...)</dt></dl>
+
+<dl><dt><a name="OclImportError-__repr__"><strong>__repr__</strong></a>(...)</dt><dd><tt>x.<a href="#OclImportError-__repr__">__repr__</a>()&nbsp;&lt;==&gt;&nbsp;repr(x)</tt></dd></dl>
+
+<dl><dt><a name="OclImportError-__setattr__"><strong>__setattr__</strong></a>(...)</dt><dd><tt>x.<a href="#OclImportError-__setattr__">__setattr__</a>('name',&nbsp;value)&nbsp;&lt;==&gt;&nbsp;x.name&nbsp;=&nbsp;value</tt></dd></dl>
+
+<dl><dt><a name="OclImportError-__setstate__"><strong>__setstate__</strong></a>(...)</dt></dl>
+
+<dl><dt><a name="OclImportError-__str__"><strong>__str__</strong></a>(...)</dt><dd><tt>x.<a href="#OclImportError-__str__">__str__</a>()&nbsp;&lt;==&gt;&nbsp;str(x)</tt></dd></dl>
+
+<dl><dt><a name="OclImportError-__unicode__"><strong>__unicode__</strong></a>(...)</dt></dl>
+
+<hr>
+Data descriptors inherited from <a href="exceptions.html#BaseException">exceptions.BaseException</a>:<br>
+<dl><dt><strong>__dict__</strong></dt>
+</dl>
+<dl><dt><strong>args</strong></dt>
+</dl>
+<dl><dt><strong>message</strong></dt>
+</dl>
+</td></tr></table> <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="OclImportResults">class <strong>OclImportResults</strong></a>(<a href="__builtin__.html#object">__builtin__.object</a>)</font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt>Class&nbsp;to&nbsp;capture&nbsp;and&nbsp;process&nbsp;the&nbsp;results&nbsp;of&nbsp;processing&nbsp;an&nbsp;import&nbsp;script<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%">Methods defined here:<br>
+<dl><dt><a name="OclImportResults-__init__"><strong>__init__</strong></a>(self, total_lines<font color="#909090">=0</font>)</dt></dl>
+
+<dl><dt><a name="OclImportResults-__str__"><strong>__str__</strong></a>(self)</dt><dd><tt>Get&nbsp;a&nbsp;concise&nbsp;summary&nbsp;of&nbsp;this&nbsp;results&nbsp;<a href="__builtin__.html#object">object</a></tt></dd></dl>
+
+<dl><dt><a name="OclImportResults-add"><strong>add</strong></a>(self, obj_url<font color="#909090">=''</font>, action_type<font color="#909090">=''</font>, obj_type<font color="#909090">=''</font>, obj_repo_url<font color="#909090">=''</font>, http_method<font color="#909090">=''</font>, obj_owner_url<font color="#909090">=''</font>, status_code<font color="#909090">=None</font>, text<font color="#909090">=''</font>, message<font color="#909090">=''</font>)</dt><dd><tt>Add&nbsp;a&nbsp;result&nbsp;to&nbsp;this&nbsp;<a href="#OclImportResults">OclImportResults</a>&nbsp;<a href="__builtin__.html#object">object</a><br>
+:param&nbsp;obj_url:<br>
+:param&nbsp;action_type:<br>
+:param&nbsp;obj_type:<br>
+:param&nbsp;obj_repo_url:<br>
+:param&nbsp;http_method:<br>
+:param&nbsp;obj_owner_url:<br>
+:param&nbsp;status_code:<br>
+:return:</tt></dd></dl>
+
+<dl><dt><a name="OclImportResults-display_report"><strong>display_report</strong></a>(self)</dt><dd><tt>Display&nbsp;a&nbsp;full&nbsp;report&nbsp;of&nbsp;the&nbsp;results</tt></dd></dl>
+
+<dl><dt><a name="OclImportResults-get_detailed_summary"><strong>get_detailed_summary</strong></a>(self, root_key<font color="#909090">=None</font>, limit_to_success_codes<font color="#909090">=False</font>)</dt><dd><tt>Get&nbsp;a&nbsp;detailed&nbsp;summary&nbsp;of&nbsp;the&nbsp;results</tt></dd></dl>
+
+<dl><dt><a name="OclImportResults-get_import_results"><strong>get_import_results</strong></a>(self, results_mode<font color="#909090">='summary'</font>)</dt><dd><tt>Single&nbsp;method&nbsp;to&nbsp;fetch&nbsp;import&nbsp;results&nbsp;in&nbsp;one&nbsp;of&nbsp;the&nbsp;supported&nbsp;formats<br>
+in&nbsp;<a href="#OclImportResults">OclImportResults</a>.OCL_IMPORT_RESULTS_MODES</tt></dd></dl>
+
+<dl><dt><a name="OclImportResults-get_summary"><strong>get_summary</strong></a>(self, root_key<font color="#909090">=None</font>)</dt><dd><tt>Get&nbsp;a&nbsp;concise&nbsp;summary&nbsp;of&nbsp;this&nbsp;results&nbsp;<a href="__builtin__.html#object">object</a>,&nbsp;optionally&nbsp;filtering&nbsp;by&nbsp;a&nbsp;specific&nbsp;root_key<br>
+:param&nbsp;root_key:&nbsp;Optional&nbsp;root_key&nbsp;to&nbsp;filter&nbsp;the&nbsp;summary&nbsp;results<br>
+:return:</tt></dd></dl>
+
+<dl><dt><a name="OclImportResults-has"><strong>has</strong></a>(self, root_key<font color="#909090">=''</font>, limit_to_success_codes<font color="#909090">=False</font>)</dt><dd><tt>Return&nbsp;whether&nbsp;this&nbsp;<a href="#OclImportResults">OclImportResults</a>&nbsp;<a href="__builtin__.html#object">object</a>&nbsp;contains&nbsp;a<br>
+result&nbsp;matching&nbsp;the&nbsp;specified&nbsp;root_key<br>
+:param&nbsp;root_key:&nbsp;Key&nbsp;to&nbsp;match<br>
+:param&nbsp;limit_to_success_codes:&nbsp;Set&nbsp;to&nbsp;true&nbsp;to&nbsp;only&nbsp;match&nbsp;a&nbsp;successful&nbsp;import&nbsp;result<br>
+:return:&nbsp;True&nbsp;if&nbsp;a&nbsp;match&nbsp;found;&nbsp;False&nbsp;otherwise</tt></dd></dl>
+
+<dl><dt><a name="OclImportResults-to_json"><strong>to_json</strong></a>(self)</dt><dd><tt>Return&nbsp;serialized&nbsp;JSON&nbsp;of&nbsp;the&nbsp;results&nbsp;<a href="__builtin__.html#object">object</a>.&nbsp;Designed&nbsp;to&nbsp;be&nbsp;used&nbsp;with&nbsp;the&nbsp;load_from_json&nbsp;method</tt></dd></dl>
+
+<hr>
+Static methods defined here:<br>
+<dl><dt><a name="OclImportResults-load_from_json"><strong>load_from_json</strong></a>(json_results)</dt><dd><tt>Load&nbsp;serialized&nbsp;JSON&nbsp;results&nbsp;into&nbsp;this&nbsp;<a href="__builtin__.html#object">object</a>.&nbsp;Designed&nbsp;to&nbsp;be&nbsp;used&nbsp;with&nbsp;the&nbsp;to_json&nbsp;method</tt></dd></dl>
+
+<hr>
+Data descriptors defined here:<br>
+<dl><dt><strong>__dict__</strong></dt>
+<dd><tt>dictionary&nbsp;for&nbsp;instance&nbsp;variables&nbsp;(if&nbsp;defined)</tt></dd>
+</dl>
+<dl><dt><strong>__weakref__</strong></dt>
+<dd><tt>list&nbsp;of&nbsp;weak&nbsp;references&nbsp;to&nbsp;the&nbsp;object&nbsp;(if&nbsp;defined)</tt></dd>
+</dl>
+<hr>
+Data and other attributes defined here:<br>
+<dl><dt><strong>NO_OBJECT_TYPE_KEY</strong> = 'NO-OBJECT-TYPE'</dl>
+
+<dl><dt><strong>OCL_IMPORT_RESULTS_MODES</strong> = ['summary', 'report', 'json']</dl>
+
+<dl><dt><strong>OCL_IMPORT_RESULTS_MODE_DEFAULT</strong> = 'report'</dl>
+
+<dl><dt><strong>OCL_IMPORT_RESULTS_MODE_JSON</strong> = 'json'</dl>
+
+<dl><dt><strong>OCL_IMPORT_RESULTS_MODE_REPORT</strong> = 'report'</dl>
+
+<dl><dt><strong>OCL_IMPORT_RESULTS_MODE_SUMMARY</strong> = 'summary'</dl>
+
+<dl><dt><strong>ORGS_RESULTS_ROOT</strong> = '/orgs/'</dl>
+
+<dl><dt><strong>SKIP_KEY</strong> = 'skip'</dl>
+
+<dl><dt><strong>USERS_RESULTS_ROOT</strong> = '/users/'</dl>
+
+</td></tr></table> <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="UnexpectedStatusCodeError">class <strong>UnexpectedStatusCodeError</strong></a>(<a href="ocldev.oclfleximporter.html#OclImportError">OclImportError</a>)</font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt><a href="exceptions.html#Exception">Exception</a>&nbsp;raised&nbsp;for&nbsp;unexpected&nbsp;status&nbsp;code<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%"><dl><dt>Method resolution order:</dt>
+<dd><a href="ocldev.oclfleximporter.html#UnexpectedStatusCodeError">UnexpectedStatusCodeError</a></dd>
+<dd><a href="ocldev.oclfleximporter.html#OclImportError">OclImportError</a></dd>
+<dd><a href="exceptions.html#Exception">exceptions.Exception</a></dd>
+<dd><a href="exceptions.html#BaseException">exceptions.BaseException</a></dd>
+<dd><a href="__builtin__.html#object">__builtin__.object</a></dd>
+</dl>
+<hr>
+Methods defined here:<br>
+<dl><dt><a name="UnexpectedStatusCodeError-__init__"><strong>__init__</strong></a>(self, expression, message)</dt></dl>
+
+<hr>
+Data descriptors inherited from <a href="ocldev.oclfleximporter.html#OclImportError">OclImportError</a>:<br>
+<dl><dt><strong>__weakref__</strong></dt>
+<dd><tt>list&nbsp;of&nbsp;weak&nbsp;references&nbsp;to&nbsp;the&nbsp;object&nbsp;(if&nbsp;defined)</tt></dd>
+</dl>
+<hr>
+Data and other attributes inherited from <a href="exceptions.html#Exception">exceptions.Exception</a>:<br>
+<dl><dt><strong>__new__</strong> = &lt;built-in method __new__ of type object&gt;<dd><tt>T.<a href="#UnexpectedStatusCodeError-__new__">__new__</a>(S,&nbsp;...)&nbsp;-&gt;&nbsp;a&nbsp;new&nbsp;<a href="__builtin__.html#object">object</a>&nbsp;with&nbsp;type&nbsp;S,&nbsp;a&nbsp;subtype&nbsp;of&nbsp;T</tt></dl>
+
+<hr>
+Methods inherited from <a href="exceptions.html#BaseException">exceptions.BaseException</a>:<br>
+<dl><dt><a name="UnexpectedStatusCodeError-__delattr__"><strong>__delattr__</strong></a>(...)</dt><dd><tt>x.<a href="#UnexpectedStatusCodeError-__delattr__">__delattr__</a>('name')&nbsp;&lt;==&gt;&nbsp;del&nbsp;x.name</tt></dd></dl>
+
+<dl><dt><a name="UnexpectedStatusCodeError-__getattribute__"><strong>__getattribute__</strong></a>(...)</dt><dd><tt>x.<a href="#UnexpectedStatusCodeError-__getattribute__">__getattribute__</a>('name')&nbsp;&lt;==&gt;&nbsp;x.name</tt></dd></dl>
+
+<dl><dt><a name="UnexpectedStatusCodeError-__getitem__"><strong>__getitem__</strong></a>(...)</dt><dd><tt>x.<a href="#UnexpectedStatusCodeError-__getitem__">__getitem__</a>(y)&nbsp;&lt;==&gt;&nbsp;x[y]</tt></dd></dl>
+
+<dl><dt><a name="UnexpectedStatusCodeError-__getslice__"><strong>__getslice__</strong></a>(...)</dt><dd><tt>x.<a href="#UnexpectedStatusCodeError-__getslice__">__getslice__</a>(i,&nbsp;j)&nbsp;&lt;==&gt;&nbsp;x[i:j]<br>
+&nbsp;<br>
+Use&nbsp;of&nbsp;negative&nbsp;indices&nbsp;is&nbsp;not&nbsp;supported.</tt></dd></dl>
+
+<dl><dt><a name="UnexpectedStatusCodeError-__reduce__"><strong>__reduce__</strong></a>(...)</dt></dl>
+
+<dl><dt><a name="UnexpectedStatusCodeError-__repr__"><strong>__repr__</strong></a>(...)</dt><dd><tt>x.<a href="#UnexpectedStatusCodeError-__repr__">__repr__</a>()&nbsp;&lt;==&gt;&nbsp;repr(x)</tt></dd></dl>
+
+<dl><dt><a name="UnexpectedStatusCodeError-__setattr__"><strong>__setattr__</strong></a>(...)</dt><dd><tt>x.<a href="#UnexpectedStatusCodeError-__setattr__">__setattr__</a>('name',&nbsp;value)&nbsp;&lt;==&gt;&nbsp;x.name&nbsp;=&nbsp;value</tt></dd></dl>
+
+<dl><dt><a name="UnexpectedStatusCodeError-__setstate__"><strong>__setstate__</strong></a>(...)</dt></dl>
+
+<dl><dt><a name="UnexpectedStatusCodeError-__str__"><strong>__str__</strong></a>(...)</dt><dd><tt>x.<a href="#UnexpectedStatusCodeError-__str__">__str__</a>()&nbsp;&lt;==&gt;&nbsp;str(x)</tt></dd></dl>
+
+<dl><dt><a name="UnexpectedStatusCodeError-__unicode__"><strong>__unicode__</strong></a>(...)</dt></dl>
+
+<hr>
+Data descriptors inherited from <a href="exceptions.html#BaseException">exceptions.BaseException</a>:<br>
+<dl><dt><strong>__dict__</strong></dt>
+</dl>
+<dl><dt><strong>args</strong></dt>
+</dl>
+<dl><dt><strong>message</strong></dt>
+</dl>
+</td></tr></table></td></tr></table>
+</body></html>
