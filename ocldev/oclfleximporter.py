@@ -313,7 +313,7 @@ class OclBulkImporter(object):
     """
 
     OCL_BULK_IMPORT_API_ENDPOINT = '/manage/bulkimport/'
-    OCL_BULK_IMPORT_MAX_WAIT_SECONDS = 15 * 60
+    OCL_BULK_IMPORT_MAX_WAIT_SECONDS = 120 * 60
     OCL_BULK_IMPORT_MINIMUM_DELAY_SECONDS = 5
 
     @staticmethod
@@ -356,10 +356,8 @@ class OclBulkImporter(object):
         """
 
         # Setup the request
-        if max_wait_seconds > OclBulkImporter.OCL_BULK_IMPORT_MAX_WAIT_SECONDS:
-            max_wait_seconds = OclBulkImporter.OCL_BULK_IMPORT_MAX_WAIT_SECONDS
-        if delay_seconds < OclBulkImporter.OCL_BULK_IMPORT_MINIMUM_DELAY_SECONDS:
-            delay_seconds = OclBulkImporter.OCL_BULK_IMPORT_MINIMUM_DELAY_SECONDS
+        max_wait_seconds = min(OclBulkImporter.OCL_BULK_IMPORT_MAX_WAIT_SECONDS, max_wait_seconds)
+        delay_seconds = max(OclBulkImporter.OCL_BULK_IMPORT_MINIMUM_DELAY_SECONDS, delay_seconds)
         start_time = time.time()
         url = api_url_root + OclBulkImporter.OCL_BULK_IMPORT_API_ENDPOINT
         url_params = {'task':task_id, 'result':'json'}
@@ -440,7 +438,7 @@ class OclFlexImporter(object):
             "has_collection": False,
             "allowed_fields": ["id", "short_code", "name", "full_name", "description", "collection_type", "custom_validation_schema", "public_access", "default_locale", "supported_locales", "website", "extras", "external_id"],
             "create_method": "POST",
-            "update_method": "POST",
+            "update_method": "PUT",
         },
         OBJ_TYPE_CONCEPT: {
             "id_field": "id",

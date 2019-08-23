@@ -1,3 +1,6 @@
+"""
+Objects to work with OCL's export API
+"""
 import requests
 import json
 import zipfile
@@ -70,6 +73,8 @@ class OclExportFactory(object):
 
 
 class OclExport(object):
+    """ Object to represent an OCL export """
+
     def __init__(self, export_json=None, ocl_export=None):
         self.set_export(export_json=export_json, ocl_export=ocl_export)
 

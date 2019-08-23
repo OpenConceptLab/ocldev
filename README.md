@@ -7,6 +7,7 @@ pip install ocldev
 ```
 
 Three main classes (and several supporting classes) are implemented currently:
-* OclFlexImporter - Used to import a list of JSON resources into OCL
-* OclImportResults - Optionally returned by the OclFlexImporter to process the results of the import
-* OclExport - Used to fetch an export from OCL
+* OclFlexImporter & OclBulkImporter - Used to import JSON resources into OCL
+* OclImportResults - Used to process the results of an import
+* OclExport & OclExportFactory - Used to fetch exports from OCL
+* OclCsvToJsonConverter - Used to convert CSV files to OCL-formatted JSON

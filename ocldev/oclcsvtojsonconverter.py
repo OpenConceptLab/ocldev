@@ -1,4 +1,4 @@
-'''
+"""
 Convert CSV to OCL-formatted JSON file.
 
 Script to convert a CSV file to an OCL-formatted JSON file based on a provided
@@ -22,7 +22,7 @@ Definitions take the form:
             'extras':[],
         },
     ]
-'''
+"""
 import csv
 import json
 import re
