@@ -174,6 +174,14 @@ class OclImportResults(object):
                         return True
         return False
 
+    def has_error_status_code(self):
+        for root_key in self._results:
+            for action_type in self._results[root_key]:
+                for status_code in self._results[root_key][action_type]:
+                    if int(status_code) >= 300:
+                        return True
+        return False
+
     def __str__(self):
         """ Get a concise summary of this results object """
         return self.get_summary()
