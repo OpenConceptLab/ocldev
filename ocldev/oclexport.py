@@ -5,6 +5,7 @@ import requests
 import json
 import zipfile
 from pprint import pprint
+from StringIO import StringIO
 
 
 class OclError(Exception):
@@ -25,15 +26,24 @@ class OclExportFactory(object):
     @staticmethod
     def load_export(repo_version_url='', oclapitoken='',
                     compressed_pathname='ocl_temp_repo_export.zip'):
+        """
+        Retrieve a cached repository export from OCL, decompress, parse the JSON, and return as a python dictionary.
+        NOTE: The export is decompressed and parsed in memory. It may be necessary in the future to handle very large
+        exports using the filesystem rather than processing in memory.
+        """
+
         # Prepare the headers
         oclapiheaders = {'Content-Type': 'application/json'}
         if oclapitoken:
             oclapiheaders['Authorization'] = 'Token ' + oclapitoken
 
-        # Fetch the export and write to file
+        # Fetch the zipped export from OCL
         repo_export_url = '%sexport/' % (repo_version_url)
         r = requests.get(repo_export_url, allow_redirects=True, headers=oclapiheaders)
         r.raise_for_status()
+
+        """JP 2019-08-29: Replaced with code to decompress the zip file in memory
+        # Write the zipped export to disk
         open(compressed_pathname, 'wb').write(r.content)
 
         # Unzip the export
@@ -44,6 +54,22 @@ class OclExportFactory(object):
         # Load the export and return
         json_filename = 'export.json'
         return OclExportFactory.load_from_export_json_file(json_filename)
+        """
+
+        # Decompress "export.json" from the zipfile in memory and return as a python dictionary
+        repo_export = None
+        export_string_handle = StringIO(r.content)
+        zipref = zipfile.ZipFile(export_string_handle, "r")
+        if 'export.json' in zipref.namelist():
+            repo_export = json.loads(zipref.read('export.json'))
+            zipref.close()
+        else:
+            zipref.close()
+            errmsg = 'ERROR: Invalid repository export for "%s": export.json not found in the export response.\n%s' % (
+                original_export_url, r.content)
+            self.vlog(1, errmsg)
+            raise Exception(errmsg)
+        return OclExport(repo_export)
 
     @staticmethod
     def load_latest_export(repo_url):
