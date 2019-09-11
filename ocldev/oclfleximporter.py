@@ -17,13 +17,18 @@ Resources currently supported by the OCL Flex Importer:
 * Concepts
 * Mappings
 * References
-* Source and Collection Versions
+* Source Versions
+* Collection Versions
 
 Verbosity settings:
 * 0 = show only responses from server
 * 1 = show responses from server and all POSTs
 * 2 = show everything except debug output
 * 3 = show everything plus debug output
+
+Owner fields: ( owner AND owner_type ) OR ( owner_url )
+Repository fields: ( source OR source_url ) OR ( collection OR collection_url )
+Concept/Mapping fields: ( id ) OR ( url )
 
 Deviations from OCL API responses:
 * Sources/Collections:
@@ -37,11 +42,7 @@ import time
 from datetime import datetime
 import urllib
 import requests
-
-
-# Owner fields: ( owner AND owner_type ) OR ( owner_url )
-# Repository fields: ( source OR source_url ) OR ( collection OR collection_url )
-# Concept/Mapping fields: ( id ) OR ( url )
+import oclconstants
 
 
 class OclImportError(Exception):
@@ -52,6 +53,7 @@ class OclImportError(Exception):
 class UnexpectedStatusCodeError(OclImportError):
     """ Exception raised for unexpected status code """
     def __init__(self, expression, message):
+        OclImportError.__init__(self)
         self.expression = expression
         self.message = message
 
@@ -59,6 +61,7 @@ class UnexpectedStatusCodeError(OclImportError):
 class InvalidOwnerError(OclImportError):
     """ Exception raised when owner information is invalid """
     def __init__(self, expression, message):
+        OclImportError.__init__(self)
         self.expression = expression
         self.message = message
 
@@ -66,6 +69,7 @@ class InvalidOwnerError(OclImportError):
 class InvalidRepositoryError(OclImportError):
     """ Exception raised when repository information is invalid """
     def __init__(self, expression, message):
+        OclImportError.__init__(self)
         self.expression = expression
         self.message = message
 
@@ -73,6 +77,7 @@ class InvalidRepositoryError(OclImportError):
 class InvalidObjectDefinition(OclImportError):
     """ Exception raised when object definition invalid """
     def __init__(self, expression, message):
+        OclImportError.__init__(self)
         self.expression = expression
         self.message = message
 
@@ -80,6 +85,7 @@ class InvalidObjectDefinition(OclImportError):
 class OclImportResults(object):
     """ Class to capture and process the results of processing an import script """
 
+    # Constants for import results modes
     OCL_IMPORT_RESULTS_MODE_SUMMARY = 'summary'
     OCL_IMPORT_RESULTS_MODE_REPORT = 'report'
     OCL_IMPORT_RESULTS_MODE_JSON = 'json'
@@ -90,12 +96,14 @@ class OclImportResults(object):
     ]
     OCL_IMPORT_RESULTS_MODE_DEFAULT = 'report'
 
+    # Helper constants
     SKIP_KEY = 'skip'
     NO_OBJECT_TYPE_KEY = 'NO-OBJECT-TYPE'
     ORGS_RESULTS_ROOT = '/orgs/'
     USERS_RESULTS_ROOT = '/users/'
 
     def __init__(self, total_lines=0):
+        """ Initialize this object """
         self._results = {}
         self.count = 0
         self.num_skipped = 0
@@ -120,16 +128,16 @@ class OclImportResults(object):
 
         # Determine the first dimension (the "logging root") of the results object
         logging_root = '/'
-        if obj_type in [OclFlexImporter.OBJ_TYPE_CONCEPT,
-                        OclFlexImporter.OBJ_TYPE_MAPPING,
-                        OclFlexImporter.OBJ_TYPE_REFERENCE]:
+        if obj_type in [oclconstants.OclConstants.RESOURCE_TYPE_CONCEPT,
+                        oclconstants.OclConstants.RESOURCE_TYPE_MAPPING,
+                        oclconstants.OclConstants.RESOURCE_TYPE_REFERENCE]:
             logging_root = obj_repo_url
-        elif obj_type in [OclFlexImporter.OBJ_TYPE_SOURCE,
-                          OclFlexImporter.OBJ_TYPE_COLLECTION]:
+        elif obj_type in [oclconstants.OclConstants.RESOURCE_TYPE_SOURCE,
+                          oclconstants.OclConstants.RESOURCE_TYPE_COLLECTION]:
             logging_root = obj_owner_url
-        elif obj_type == OclFlexImporter.OBJ_TYPE_ORGANIZATION:
+        elif obj_type == oclconstants.OclConstants.RESOURCE_TYPE_ORGANIZATION:
             logging_root = self.ORGS_RESULTS_ROOT
-        elif obj_type == OclFlexImporter.OBJ_TYPE_USER:
+        elif obj_type == oclconstants.OclConstants.RESOURCE_TYPE_USER:
             logging_root = self.USERS_RESULTS_ROOT
 
         # Setup the results dictionary to accept this new result
@@ -175,6 +183,10 @@ class OclImportResults(object):
         return False
 
     def has_error_status_code(self):
+        """
+        Return True if at least one error HTTP response code (e.g. >= 300) is in the results.
+        Otherwise return False.
+        """
         for root_key in self._results:
             for action_type in self._results[root_key]:
                 for status_code in self._results[root_key][action_type]:
@@ -200,6 +212,7 @@ class OclImportResults(object):
             return self.display_report()
         elif results_mode == OclImportResults.OCL_IMPORT_RESULTS_MODE_JSON:
             return self.to_json()
+        return None
 
     def get_summary(self, root_key=None):
         """
@@ -215,6 +228,7 @@ class OclImportResults(object):
                 for status_code in self._results[root_key][action_type]:
                     num_processed += len(self._results[root_key][action_type][status_code])
             return 'Processed %s for key "%s"' % (num_processed, root_key)
+        return ''
 
     def get_detailed_summary(self, root_key=None, limit_to_success_codes=False):
         """ Get a detailed summary of the results """
@@ -231,7 +245,8 @@ class OclImportResults(object):
                 if action_type not in results_summary:
                     results_summary[action_type] = {}
                 for status_code in self._results[k][action_type]:
-                    if limit_to_success_codes and (int(status_code) < 200 or int(status_code) >= 300):
+                    if limit_to_success_codes and (
+                            int(status_code) < 200 or int(status_code) >= 300):
                         continue
                     status_code_count = len(self._results[k][action_type][status_code])
                     if status_code not in results_summary[action_type]:
@@ -284,7 +299,10 @@ class OclImportResults(object):
         return output
 
     def to_json(self):
-        """ Return serialized JSON of the results object. Designed to be used with the load_from_json method """
+        """
+        Return serialized JSON of the results object.
+        Designed to be used with the load_from_json method
+        """
         return json.dumps({
             'results': self._results,
             'count': self.count,
@@ -295,7 +313,10 @@ class OclImportResults(object):
 
     @staticmethod
     def load_from_json(json_results):
-        """ Load serialized JSON results into this object. Designed to be used with the to_json method """
+        """
+        Load serialized JSON results into this object.
+        Designed to be used with the to_json method
+        """
         if isinstance(json_results, basestring):
             json_results = json.loads(json_results)
         if isinstance(json_results, dict):
@@ -318,6 +339,9 @@ class OclBulkImporter(object):
 
     Currently, bulk import can only be run in live mode (test_mode=False) with limit set to zero
     and updating objects set to False.
+
+    Example use:
+    oclfleximporter.OclBulkImporter()
     """
 
     OCL_BULK_IMPORT_API_ENDPOINT = '/manage/bulkimport/'
@@ -326,7 +350,13 @@ class OclBulkImporter(object):
 
     @staticmethod
     def post(file_path='', input_list=None, api_url_root='', api_token=''):
-        """ Post the import to the OCL bulk import API endpoint and return the request object """
+        """
+        Post the import to the OCL bulk import API endpoint and return the request object
+        :param file_path: Full path to a file to import
+        :param input_list: Python list of JSON dictionaries to import
+        :param api_url_root: e.g. https://api.openconceptlab.org
+        :param api_token: OCL API token for the user account that will run the import
+        """
 
         # TODO: Switch to returning a custom OclBulkImportResponse object
 
@@ -338,8 +368,8 @@ class OclBulkImporter(object):
                 post_data += json.dumps(line) + '\n'
         elif file_path:
             # load the file as a string
-            f = open(file_path, 'rb')
-            post_data = f.read()
+            file_handle = open(file_path, 'rb')
+            post_data = file_handle.read()
 
         # Process the import
         url = api_url_root + OclBulkImporter.OCL_BULK_IMPORT_API_ENDPOINT
@@ -352,7 +382,8 @@ class OclBulkImporter(object):
         return import_request
 
     @staticmethod
-    def get_bulk_import_results(task_id=None, api_url_root='', api_token='', max_wait_seconds=0, delay_seconds=15):
+    def get_bulk_import_results(task_id=None, api_url_root='', api_token='',
+                                max_wait_seconds=0, delay_seconds=15):
         """
         Get an OclImportResults object representing the results of a bulk import API process
         submit to OCL as identified by a task_id.
@@ -372,20 +403,22 @@ class OclBulkImporter(object):
         api_headers = {'Authorization': 'Token ' + api_token}
 
         # Do the initial request and return if successful and import is complete
-        r = requests.get(url, params=url_params, headers=api_headers)
-        r.raise_for_status()
-        results_json = r.json()
-        if 'state' not in results_json or ('state' in results_json and results_json['state'] != 'PENDING'):
+        import_results_response = requests.get(url, params=url_params, headers=api_headers)
+        import_results_response.raise_for_status()
+        results_json = import_results_response.json()
+        if 'state' not in results_json or (
+                'state' in results_json and results_json['state'] != 'PENDING'):
             return OclImportResults.load_from_json(results_json)
 
         # Import results were not ready, so start looping
         while time.time() - start_time + delay_seconds < max_wait_seconds:
             #print 'Delaying %s seconds...' % str(delay_seconds)
             time.sleep(delay_seconds)
-            r = requests.get(url, params=url_params, headers=api_headers)
-            r.raise_for_status()
-            results_json = r.json()
-            if 'state' not in results_json or ('state' in results_json and results_json['state'] != 'PENDING'):
+            import_results_response = requests.get(url, params=url_params, headers=api_headers)
+            import_results_response.raise_for_status()
+            results_json = import_results_response.json()
+            if 'state' not in results_json or (
+                    'state' in results_json and results_json['state'] != 'PENDING'):
                 return OclImportResults.load_from_json(results_json)
 
         return None
@@ -396,19 +429,7 @@ class OclFlexImporter(object):
     the OCL API rather than the batch importer.
     """
 
-    INTERNAL_MAPPING = 1
-    EXTERNAL_MAPPING = 2
-
-    OBJ_TYPE_USER = 'User'
-    OBJ_TYPE_ORGANIZATION = 'Organization'
-    OBJ_TYPE_SOURCE = 'Source'
-    OBJ_TYPE_COLLECTION = 'Collection'
-    OBJ_TYPE_CONCEPT = 'Concept'
-    OBJ_TYPE_MAPPING = 'Mapping'
-    OBJ_TYPE_REFERENCE = 'Reference'
-    OBJ_TYPE_SOURCE_VERSION = 'Source Version'
-    OBJ_TYPE_COLLECTION_VERSION = 'Collection Version'
-
+    # Constants for import action types
     ACTION_TYPE_NEW = 'new'
     ACTION_TYPE_UPDATE = 'update'
     ACTION_TYPE_RETIRE = 'retire'
@@ -418,57 +439,74 @@ class OclFlexImporter(object):
 
     # Resource type definitions
     obj_def = {
-        OBJ_TYPE_ORGANIZATION: {
+        oclconstants.OclConstants.RESOURCE_TYPE_ORGANIZATION: {
             "id_field": "id",
             "url_name": "orgs",
             "has_owner": False,
             "has_source": False,
             "has_collection": False,
-            "allowed_fields": ["id", "company", "extras", "location", "name", "public_access", "extras", "website"],
+            "allowed_fields": [
+                "id", "company", "extras", "location", "name",
+                "public_access", "extras", "website"
+            ],
             "create_method": "POST",
             "update_method": "POST",
         },
-        OBJ_TYPE_SOURCE: {
+        oclconstants.OclConstants.RESOURCE_TYPE_SOURCE: {
             "id_field": "id",
             "url_name": "sources",
             "has_owner": True,
             "has_source": False,
             "has_collection": False,
-            "allowed_fields": ["id", "short_code", "name", "full_name", "description", "source_type", "custom_validation_schema", "public_access", "default_locale", "supported_locales", "website", "extras", "external_id"],
+            "allowed_fields": [
+                "id", "short_code", "name", "full_name", "description",
+                "source_type", "custom_validation_schema", "public_access",
+                "default_locale", "supported_locales", "website", "extras", "external_id"
+            ],
             "create_method": "POST",
             "update_method": "POST",
         },
-        OBJ_TYPE_COLLECTION: {
+        oclconstants.OclConstants.RESOURCE_TYPE_COLLECTION: {
             "id_field": "id",
             "url_name": "collections",
             "has_owner": True,
             "has_source": False,
             "has_collection": False,
-            "allowed_fields": ["id", "short_code", "name", "full_name", "description", "collection_type", "custom_validation_schema", "public_access", "default_locale", "supported_locales", "website", "extras", "external_id"],
+            "allowed_fields": [
+                "id", "short_code", "name", "full_name", "description", "collection_type",
+                "custom_validation_schema", "public_access", "default_locale", "supported_locales",
+                "website", "extras", "external_id"
+            ],
             "create_method": "POST",
             "update_method": "PUT",
         },
-        OBJ_TYPE_CONCEPT: {
+        oclconstants.OclConstants.RESOURCE_TYPE_CONCEPT: {
             "id_field": "id",
             "url_name": "concepts",
             "has_owner": True,
             "has_source": True,
             "has_collection": False,
-            "allowed_fields": ["id", "external_id", "concept_class", "datatype", "names", "descriptions", "retired", "extras"],
+            "allowed_fields": [
+                "id", "external_id", "concept_class", "datatype", "names",
+                "descriptions", "retired", "extras"
+            ],
             "create_method": "POST",
             "update_method": "PUT",
         },
-        OBJ_TYPE_MAPPING: {
+        oclconstants.OclConstants.RESOURCE_TYPE_MAPPING: {
             "id_field": "id",
             "url_name": "mappings",
             "has_owner": True,
             "has_source": True,
             "has_collection": False,
-            "allowed_fields": ["id", "map_type", "from_concept_url", "to_source_url", "to_concept_url", "to_concept_code", "to_concept_name", "extras", "external_id"],
+            "allowed_fields": [
+                "id", "map_type", "from_concept_url", "to_source_url", "to_concept_url",
+                "to_concept_code", "to_concept_name", "extras", "external_id"
+            ],
             "create_method": "POST",
             "update_method": "POST",
         },
-        OBJ_TYPE_REFERENCE: {
+        oclconstants.OclConstants.RESOURCE_TYPE_REFERENCE: {
             "url_name": "references",
             "has_owner": True,
             "has_source": False,
@@ -477,7 +515,7 @@ class OclFlexImporter(object):
             "create_method": "PUT",
             "update_method": None,
         },
-        OBJ_TYPE_SOURCE_VERSION: {
+        oclconstants.OclConstants.RESOURCE_TYPE_SOURCE_VERSION: {
             "id_field": "id",
             "url_name": "versions",
             "has_owner": True,
@@ -488,7 +526,7 @@ class OclFlexImporter(object):
             "create_method": "POST",
             "update_method": "POST",
         },
-        OBJ_TYPE_COLLECTION_VERSION: {
+        oclconstants.OclConstants.RESOURCE_TYPE_COLLECTION_VERSION: {
             "id_field": "id",
             "url_name": "versions",
             "has_owner": True,
@@ -499,13 +537,14 @@ class OclFlexImporter(object):
             "create_method": "POST",
             "update_method": "POST",
         },
-        OBJ_TYPE_USER: {
+        oclconstants.OclConstants.RESOURCE_TYPE_USER: {
             "id_field": "username",
             "url_name": "users",
             "has_owner": False,
             "has_source": False,
             "has_collection": False,
-            "allowed_fields": ["username", "name", "email", "company", "location", "preferred_locale"],
+            "allowed_fields": [
+                "username", "name", "email", "company", "location", "preferred_locale"],
             "create_method": "POST",
             "update_method": "POST",
         }
@@ -605,14 +644,16 @@ class OclFlexImporter(object):
                     if self.import_delay and not self.test_mode:
                         time.sleep(self.import_delay)
                 else:
-                    message = "Unrecognized 'type' attribute '%s' for object: %s" % (obj_type, json_line_raw)
+                    message = "Unrecognized 'type' attribute '%s' for object: %s" % (
+                        obj_type, json_line_raw)
                     self.import_results.add(action_type=self.ACTION_TYPE_SKIP, obj_type=obj_type,
                                             text=json_line_raw, message=message)
                     self.log('**** SKIPPING: %s' % message)
                     num_skipped += 1
             else:
                 message = "No 'type' attribute: %s" % json_line_raw
-                self.import_results.add(action_type=self.ACTION_TYPE_SKIP, text=json_line_raw, message=message)
+                self.import_results.add(
+                    action_type=self.ACTION_TYPE_SKIP, text=json_line_raw, message=message)
                 self.log('**** SKIPPING: %s' % message)
                 num_skipped += 1
 
@@ -681,7 +722,8 @@ class OclFlexImporter(object):
         request_existence = requests.head(
             self.api_url_root + obj_url, headers=self.api_headers, params=params)
         if request_existence.status_code == requests.codes.ok:
-            if 'num_found' in request_existence.headers and int(request_existence.headers['num_found']) >= 1:
+            if 'num_found' in request_existence.headers and int(
+                    request_existence.headers['num_found']) >= 1:
                 return True
             else:
                 return False
@@ -698,7 +740,7 @@ class OclFlexImporter(object):
     def does_reference_exist(self, obj_url, obj):
         """ Returns whether the specified reference already exists """
 
-        '''
+        """
         # Return false if no expression
         if 'expression' not in obj or not obj['expression']:
             return False
@@ -708,7 +750,8 @@ class OclFlexImporter(object):
         request_existence = requests.head(
             self.api_url_root + obj_url, headers=self.api_headers, params=params)
         if request_existence.status_code == requests.codes.ok:
-            if 'num_found' in request_existence.headers and int(request_existence.headers['num_found']) >= 1:
+            if 'num_found' in request_existence.headers and int(
+                    request_existence.headers['num_found']) >= 1:
                 return True
             else:
                 return False
@@ -718,7 +761,7 @@ class OclFlexImporter(object):
             raise UnexpectedStatusCodeError(
                 "GET " + self.api_url_root + obj_url,
                 "Unexpected status code returned: " + str(request_existence.status_code))
-        '''
+        """
 
         return False
 
@@ -756,20 +799,27 @@ class OclFlexImporter(object):
             elif "owner" in obj and "owner_type" in obj:
                 obj_owner_type = obj.pop("owner_type")
                 obj_owner = obj.pop("owner")
-                if obj_owner_type == self.OBJ_TYPE_ORGANIZATION:
-                    obj_owner_url = "/" + self.obj_def[self.OBJ_TYPE_ORGANIZATION]["url_name"] + "/" + obj_owner + "/"
-                elif obj_owner_type == self.OBJ_TYPE_USER:
-                    obj_owner_url = "/" + self.obj_def[self.OBJ_TYPE_USER]["url_name"] + "/" + obj_owner + "/"
+                if obj_owner_type == oclconstants.OclConstants.RESOURCE_TYPE_ORGANIZATION:
+                    obj_owner_url = "/%s/%s/" % (
+                        self.obj_def[oclconstants.OclConstants.RESOURCE_TYPE_ORGANIZATION]["url_name"],
+                        obj_owner)
+                elif obj_owner_type == oclconstants.OclConstants.RESOURCE_TYPE_USER:
+                    obj_owner_url = "/%s/%s/" % (
+                        self.obj_def[oclconstants.OclConstants.RESOURCE_TYPE_USER]["url_name"],
+                        obj_owner)
                 else:
-                    raise InvalidOwnerError(obj, "Valid owner information required for object of type '" + obj_type + "'")
+                    raise InvalidOwnerError(
+                        obj, "Valid owner information required for object of type '%s'" % obj_type)
             elif has_source and 'source_url' in obj and obj['source_url']:
                 # Extract owner info from the source URL
                 obj_owner_url = obj['source_url'][:self.find_nth(obj['source_url'], '/', 3) + 1]
             elif has_collection and 'collection_url' in obj and obj['collection_url']:
                 # Extract owner info from the collection URL
-                obj_owner_url = obj['collection_url'][:self.find_nth(obj['collection_url'], '/', 3) + 1]
+                obj_owner_url = obj['collection_url'][:self.find_nth(
+                    obj['collection_url'], '/', 3) + 1]
             else:
-                raise InvalidOwnerError(obj, "Valid owner information required for object of type '" + obj_type + "'")
+                raise InvalidOwnerError(
+                    obj, "Valid owner information required for object of type '" + obj_type + "'")
 
         # Set repository URL using ("source_url" OR "source") OR ("collection_url" OR "collection")
         # e.g. /orgs/MyOrganization/sources/MySource/ OR /orgs/CIEL/collections/StarterSet/
@@ -782,7 +832,8 @@ class OclFlexImporter(object):
             elif "source" in obj:
                 obj_repo_url = obj_owner_url + 'sources/' + obj.pop("source") + "/"
             else:
-                raise InvalidRepositoryError(obj, "Valid source information required for object of type '" + obj_type + "'")
+                raise InvalidRepositoryError(
+                    obj, "Valid source information required for object of type '%s'" % obj_type)
         elif has_collection:
             if "collection_url" in obj:
                 obj_repo_url = obj.pop("collection_url")
@@ -790,7 +841,8 @@ class OclFlexImporter(object):
             elif "collection" in obj:
                 obj_repo_url = obj_owner_url + 'collections/' + obj.pop("collection") + "/"
             else:
-                raise InvalidRepositoryError(obj, "Valid collection information required for object of type '" + obj_type + "'")
+                raise InvalidRepositoryError(
+                    obj, "Valid collection information required for object of type '%s'" % obj_type)
 
         # Build object URLs -- note that these always end with forward slashes
         obj_url = new_obj_url = ''
@@ -811,14 +863,14 @@ class OclFlexImporter(object):
             new_obj_url = obj_owner_url + self.obj_def[obj_type]["url_name"] + "/"
             obj_url = new_obj_url + obj_id + "/"
         else:
-            # Only organizations and users don't have an owner or repository -- and only orgs can be created here
+            # Only orgs/users don't have an owner or repository, and only orgs can be created here
             new_obj_url = '/' + self.obj_def[obj_type]["url_name"] + "/"
             obj_url = new_obj_url + obj_id + "/"
 
         # Handle query parameters
         # NOTE: This is hard coded just for references for now
         query_params = {}
-        if obj_type == self.OBJ_TYPE_REFERENCE:
+        if obj_type == oclconstants.OclConstants.RESOURCE_TYPE_REFERENCE:
             if "__cascade" in obj:
                 query_params["cascade"] = obj.pop("__cascade")
 
@@ -849,8 +901,8 @@ class OclFlexImporter(object):
                                             text=json.dumps(obj), message=message)
                     if not self.test_mode:
                         return
-            except UnexpectedStatusCodeError as e:
-                message = "Unexpected error occurred: %s, %s" % (e.expression, e.message)
+            except UnexpectedStatusCodeError as err:
+                message = "Unexpected error occurred: %s, %s" % (err.expression, err.message)
                 self.import_results.add(action_type=self.ACTION_TYPE_SKIP, obj_type=obj_type,
                                         obj_url=obj_url, obj_repo_url=obj_repo_url,
                                         obj_owner_url=obj_owner_url,
@@ -872,8 +924,8 @@ class OclFlexImporter(object):
                     self.log("** SKIPPING: %s" % message)
                     if not self.test_mode:
                         return
-            except UnexpectedStatusCodeError as e:
-                message = "Unexpected error occurred: %s, %s" % (e.expression, e.message)
+            except UnexpectedStatusCodeError as err:
+                message = "Unexpected error occurred: %s, %s" % (err.expression, err.message)
                 self.import_results.add(action_type=self.ACTION_TYPE_SKIP, obj_type=obj_type,
                                         obj_url=obj_url, obj_repo_url=obj_repo_url,
                                         obj_owner_url=obj_owner_url,
@@ -884,14 +936,14 @@ class OclFlexImporter(object):
         # Check if object already exists: GET self.api_url_root + obj_url
         obj_already_exists = False
         try:
-            if obj_type == 'Reference':
+            if obj_type == oclconstants.OclConstants.RESOURCE_TYPE_REFERENCE:
                 obj_already_exists = self.does_reference_exist(obj_url, obj)
-            elif obj_type == 'Mapping':
+            elif obj_type == oclconstants.OclConstants.RESOURCE_TYPE_MAPPING:
                 obj_already_exists = self.does_mapping_exist(obj_url, obj)
             else:
                 obj_already_exists = self.does_object_exist(obj_url)
-        except UnexpectedStatusCodeError as e:
-            message = "Unexpected error occurred: %s, %s" % (e.expression, e.message)
+        except UnexpectedStatusCodeError as err:
+            message = "Unexpected error occurred: %s, %s" % (err.expression, err.message)
             self.import_results.add(action_type=self.ACTION_TYPE_SKIP, obj_type=obj_type,
                                     obj_url=obj_url, obj_repo_url=obj_repo_url,
                                     obj_owner_url=obj_owner_url,
@@ -908,9 +960,10 @@ class OclFlexImporter(object):
             if not self.test_mode:
                 return
         elif obj_already_exists:
-            self.log("** INFO: Object already exists at: " + self.api_url_root + obj_url)
+            self.log("** INFO: Object already exists at: %s%s" % (self.api_url_root, obj_url))
         else:
-            self.log("** INFO: Object does not exist so we'll create it at: " + self.api_url_root + obj_url)
+            self.log("** INFO: Object does not exist so we'll create it at: %s%s" % (
+                self.api_url_root, obj_url))
 
         # TODO: Validate the JSON object
 
@@ -926,8 +979,8 @@ class OclFlexImporter(object):
                 obj_already_exists=obj_already_exists,
                 obj=obj, obj_not_allowed=obj_not_allowed,
                 query_params=query_params)
-        except requests.exceptions.HTTPError as e:
-            self.log("ERROR: ", e)
+        except requests.exceptions.HTTPError as err:
+            self.log("ERROR: ", err)
 
     def update_or_create(self, obj_type='', obj_id='', obj_owner_url='',
                          obj_repo_url='', obj_url='', new_obj_url='',
