@@ -17,6 +17,10 @@ import oclconstants
 class OclCsvToJsonConverter(object):
     """ Class to convert CSV file to OCL-formatted JSON flex file """
 
+    # Constants for method of processing the CSV
+    PROCESS_BY_DEFINITION = 'process_by_definition'
+    PROCESS_BY_ROW = 'process_by_row'
+
     # Constants for explicitly defined field definitions
     DEF_CORE_FIELDS = 'core_fields'
     DEF_SUB_RESOURCES = 'subresources'
@@ -645,9 +649,7 @@ class OclCsvToJsonConverter(object):
         return value
 
     def process_reference(self, csv_row, field_def):
-        """
-        Processes a reference in the CSV row
-        """
+        """ Processes a reference in the CSV row """
         result = None
         if ('data_column' in field_def and field_def['data_column'] and
                 field_def['data_column'] in csv_row):
