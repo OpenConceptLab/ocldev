@@ -35,7 +35,31 @@ class OclConstants(object):
     # API endpoint stems for owners
     OWNER_STEM_USERS = 'users'
     OWNER_STEM_ORGS = 'orgs'
+    OWNER_TYPE_TO_STEM = {
+        RESOURCE_TYPE_ORGANIZATION: OWNER_STEM_ORGS,
+        RESOURCE_TYPE_USER: OWNER_STEM_USERS,
+    }
 
     # API endpoint stems for repositories
     REPO_STEM_SOURCES = 'sources'
     REPO_STEM_COLLECTIONS = 'collections'
+    REPO_TYPE_TO_STEM = {
+        RESOURCE_TYPE_SOURCE: REPO_STEM_SOURCES,
+        RESOURCE_TYPE_COLLECTION: REPO_STEM_COLLECTIONS,
+    }
+
+    @staticmethod
+    def get_owner_url(owner_id='', owner_type=RESOURCE_TYPE_ORGANIZATION):
+        if owner_type not in OclConstants.OWNER_TYPE_TO_STEM:
+            raise Exception('Invalid owner type "%s"' % owner_type)
+        return '/%s/%s' % (OclConstants.OWNER_TYPE_TO_STEM[owner_type], owner_id)
+
+    @staticmethod
+    def get_repository_url(owner_id='', repository_id='',
+                           owner_type=RESOURCE_TYPE_ORGANIZATION,
+                           repository_type=RESOURCE_TYPE_SOURCE):
+        owner_url = OclConstants.get_owner_url(owner_id=owner_id, owner_type=owner_type)
+        if repository_type not in OclConstants.REPO_TYPE_TO_STEM:
+            raise Exception('Invalid repository type "%s"' % repository_type)
+        return '%s/%s/%s' % (
+            owner_url, OclConstants.REPO_TYPE_TO_STEM[repository_type], repository_id)
