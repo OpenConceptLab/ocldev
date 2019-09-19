@@ -40,16 +40,15 @@ import oclconstants
 class OclCsvToJsonConverter(object):
     """ Class to convert CSV file to OCL-formatted JSON flex file """
 
-    # Constants for explicitly defined resource definitions
+    # Constants for explicitly defined field definitions
     DEF_CORE_FIELDS = 'core_fields'
     DEF_SUB_RESOURCES = 'subresources'
     DEF_KEY_VALUE_PAIRS = 'key_value_pairs'
-
-    # Constants for automatic resource definitions
-    DEF_AUTO_CONCEPT_NAMES = 'auto_concept_names'
-    DEF_AUTO_CONCEPT_DESCRIPTIONS = 'auto_concept_descriptions'
-    DEF_AUTO_ATTRIBUTES = 'auto_attributes'
-    DEF_AUTO_CONCEPT_MAPPINGS = 'auto_concept_mappings'
+    DEF_RESOURCE_FIELD_TYPES = [
+        DEF_CORE_FIELDS,
+        DEF_SUB_RESOURCES,
+        DEF_KEY_VALUE_PAIRS,
+    ]
 
     # Constants for specific attribute names
     DEF_KEY_RESOURCE_FIELD = 'resource_field'
@@ -60,6 +59,19 @@ class OclCsvToJsonConverter(object):
     DEF_KEY_TRIGGER_COLUMN = '__trigger_column'
     DEF_KEY_TRIGGER_VALUE = '__trigger_value'
 
+    # Constants for automatic resource definitions
+    DEF_TYPE_AUTO_RESOURCE = 'AUTO-RESOURCE'
+    DEF_AUTO_CONCEPT_NAMES = 'auto_concept_names'
+    DEF_AUTO_CONCEPT_DESCRIPTIONS = 'auto_concept_descriptions'
+    DEF_AUTO_ATTRIBUTES = 'auto_attributes'
+    DEF_AUTO_RESOURCE_TEMPLATE = 'auto_resource_template'
+    DEF_KEY_TRIGGER_COLUMN_PREFIX = '__trigger_column_prefix'
+    DEF_KEY_SKIP_IF_EMPTY_PREFIX = 'skip_if_empty_column_prefix'
+    AUTO_REPLACEMENT_FIELDS = {
+        DEF_KEY_TRIGGER_COLUMN_PREFIX: DEF_KEY_TRIGGER_COLUMN,
+        DEF_KEY_SKIP_IF_EMPTY_PREFIX: DEF_KEY_SKIP_IF_EMPTY,
+    }
+
     # Mapping descriptors
     INTERNAL_MAPPING_ID = 'Internal'
     EXTERNAL_MAPPING_ID = 'External'
@@ -68,13 +80,11 @@ class OclCsvToJsonConverter(object):
     INVALID_CHARS = ' `~!@#$%^&*()_+-=[]{}\\|;:"\',/<>?'
     REPLACE_CHAR = '-'
 
-    def __init__(self, output_filename='', csv_filename='', input_list=None,
+    def __init__(self, csv_filename='', input_list=None,
                  csv_resource_definitions=None, verbose=False):
         """
         Initialize this object
         Parameters:
-          output_filename <string> - Filename to save results to; results
-                returned as list if not provided
           csv_filename <string> - Filename to load CSV data from; use "input_list"
                 if CSV already loaded into list
           input_list <list> - List of dictionaries objects representing each row of the CSV file
@@ -82,7 +92,6 @@ class OclCsvToJsonConverter(object):
                 how to convert CSV to OCL-JSON
           verbose <int> - 0=off, 1=some debug info, 2=all debug info
         """
-        self.output_filename = output_filename
         self.csv_filename = csv_filename
         self.input_list = input_list
         if csv_filename:
@@ -120,8 +129,15 @@ class OclCsvToJsonConverter(object):
             row_i += 1
             csv_row = self.preprocess_csv_row(csv_row.copy(), attr)
             for csv_resource_def in self.csv_resource_definitions:
-                if self.DEF_KEY_IS_ACTIVE not in csv_resource_def or csv_resource_def[self.DEF_KEY_IS_ACTIVE]:
-                    self.process_csv_row_with_definition(csv_row, csv_resource_def, attr=attr)
+                if (self.DEF_KEY_IS_ACTIVE in csv_resource_def and not csv_resource_def[
+                        self.DEF_KEY_IS_ACTIVE]):
+                    continue
+                ocl_resources = self.process_csv_row_with_definition(
+                    csv_row, csv_resource_def, attr=attr)
+                if ocl_resources and isinstance(ocl_resources, dict):  # Single OCL resource
+                    self.output_list.append(ocl_resources)
+                elif ocl_resources and isinstance(ocl_resources, list):  # List of OCL resources
+                    self.output_list += ocl_resources
         return self.output_list
 
     def process_by_definition(self, num_rows=0, attr=None):
@@ -130,47 +146,47 @@ class OclCsvToJsonConverter(object):
             self.load_csv(self.csv_filename)
         self.output_list = []
         for csv_resource_def in self.csv_resource_definitions:
-            if self.DEF_KEY_IS_ACTIVE not in csv_resource_def or csv_resource_def[self.DEF_KEY_IS_ACTIVE]:
-                if self.verbose:
-                    print '\n%s' % ('*' * 100)
-                    print 'Processing definition: %s' % csv_resource_def['definition_name']
-                    print '*' * 100
-                row_i = 0
-                for csv_row in self.input_list:
-                    if num_rows and row_i >= num_rows:
-                        break
-                    row_i += 1
-                    csv_row = self.preprocess_csv_row(csv_row.copy(), attr)
-                    self.process_csv_row_with_definition(csv_row, csv_resource_def, attr=attr)
+            if self.DEF_KEY_IS_ACTIVE in csv_resource_def and not csv_resource_def[
+                    self.DEF_KEY_IS_ACTIVE]:
+                continue
+            if self.verbose:
+                print '\n%s' % ('*' * 100)
+                print 'Processing definition: %s' % csv_resource_def['definition_name']
+                print '*' * 100
+            row_i = 0
+            for csv_row in self.input_list:
+                if num_rows and row_i >= num_rows:
+                    break
+                row_i += 1
+                csv_row = self.preprocess_csv_row(csv_row.copy(), attr)
+                ocl_resources = self.process_csv_row_with_definition(
+                    csv_row, csv_resource_def, attr=attr)
+                if ocl_resources and isinstance(ocl_resources, dict):  # Single OCL resource
+                    self.output_list.append(ocl_resources)
+                elif ocl_resources and isinstance(ocl_resources, list):  # List of OCL resources
+                    self.output_list += ocl_resources
         return self.output_list
 
     def process_csv_row_with_definition(self, csv_row, csv_resource_def, attr=None):
         """ Process individual CSV row with the provided CSV resource definition """
-        ocl_resource = {}
+
+        # Throw exception if resource_type not in the resource definition
+        if self.DEF_KEY_RESOURCE_TYPE not in csv_resource_def:
+            raise Exception(
+                'Missing required "resource_type" in row definition:' % csv_resource_def)
 
         # TRIGGER: Skip row if the trigger column does not equal trigger_value
         if self.DEF_KEY_TRIGGER_COLUMN in csv_resource_def:
             if csv_resource_def[self.DEF_KEY_TRIGGER_COLUMN] not in csv_row:
-                # if self.verbose:
-                #     print "SKIPPING: Trigger column '%s' not found in CSV row: %s" % (
-                #         csv_resource_def[self.DEF_KEY_TRIGGER_COLUMN], csv_row)
                 return
             if csv_row[csv_resource_def[self.DEF_KEY_TRIGGER_COLUMN]] != csv_resource_def[
                     self.DEF_KEY_TRIGGER_VALUE]:
-                # if self.verbose:
-                #     print "SKIPPING: Trigger column '%s' doesn't match trigger value '%s': %s" % (
-                #         csv_resource_def[self.DEF_KEY_TRIGGER_COLUMN],
-                #         csv_resource_def[self.DEF_KEY_TRIGGER_VALUE],
-                #         csv_row[csv_resource_def[self.DEF_KEY_TRIGGER_COLUMN]])
                 return
-            # if self.verbose:
-            #     print "INFO: Trigger column '%s' matches trigger value '%s'. Continuing..." % (
-            #         csv_resource_def[self.DEF_KEY_TRIGGER_COLUMN],
-            #         csv_resource_def[self.DEF_KEY_TRIGGER_VALUE])
 
         # SKIP_IF_EMPTY: Skip if SKIP_IF_EMPTY column has a blank value
         is_skip_row = False
-        if self.DEF_KEY_SKIP_IF_EMPTY in csv_resource_def and csv_resource_def[self.DEF_KEY_SKIP_IF_EMPTY]:
+        if self.DEF_KEY_SKIP_IF_EMPTY in csv_resource_def and csv_resource_def[
+                self.DEF_KEY_SKIP_IF_EMPTY]:
             skip_columns = csv_resource_def[self.DEF_KEY_SKIP_IF_EMPTY]
             if not isinstance(skip_columns, list):
                 skip_columns = [skip_columns]
@@ -189,14 +205,42 @@ class OclCsvToJsonConverter(object):
             is_skip_row = handler(csv_resource_def, csv_row)
         if is_skip_row:
             if self.verbose:
-                print 'SKIPPING: %s' % (csv_resource_def['definition_name'])
+                # print 'SKIPPING: %s' % (csv_resource_def['definition_name'])
+                pass
             return
 
-        # Determine the OCL resource type, e.g. Concept, Mapping, Source, etc.
-        if self.DEF_KEY_RESOURCE_TYPE not in csv_resource_def:
-            raise Exception(
-                'Missing required "resource_type" in row definition:' % csv_resource_def)
-        ocl_resource_type = ocl_resource['type'] = csv_resource_def[self.DEF_KEY_RESOURCE_TYPE]
+        # Either process batch of auto resources or build individual resource
+        ocl_resource_type = csv_resource_def[self.DEF_KEY_RESOURCE_TYPE]
+        if ocl_resource_type == OclCsvToJsonConverter.DEF_TYPE_AUTO_RESOURCE:
+            auto_resource_def_template = csv_resource_def[
+                OclCsvToJsonConverter.DEF_AUTO_RESOURCE_TEMPLATE]
+            unique_auto_resource_indexes = OclCsvToJsonConverter.get_unique_csv_row_auto_indexes(
+                index_prefix=auto_resource_def_template['index_prefix'],
+                index_postfix=auto_resource_def_template['index_postfix'],
+                index_regex=auto_resource_def_template['index_regex'],
+                resource_def_template=auto_resource_def_template,
+                csv_row=csv_row)
+            ocl_resources = []
+            for auto_index in unique_auto_resource_indexes:
+                resource_def = OclCsvToJsonConverter.generate_resource_def_from_template(
+                    auto_resource_index=auto_index,
+                    index_prefix=auto_resource_def_template['index_prefix'],
+                    index_postfix=auto_resource_def_template['index_postfix'],
+                    resource_def_template=auto_resource_def_template)
+                ocl_resource = self.process_csv_row_with_definition(
+                    csv_row, resource_def, attr=attr)
+                if ocl_resource:
+                    ocl_resources.append(ocl_resource)
+            return ocl_resources
+        else:
+            return self.build_resource(csv_row, csv_resource_def, attr=attr)
+
+    def build_resource(self, csv_row, csv_resource_def, attr=None):
+        """ Build an OCL resource """
+
+        # Start building the resource
+        ocl_resource_type = csv_resource_def['resource_type']
+        ocl_resource = {'type': ocl_resource_type}
 
         # Determine resource's ID and auto-replace invalid ID characters
         has_id_column = False
@@ -214,28 +258,43 @@ class OclCsvToJsonConverter(object):
 
         # Set core fields, eg concept_class, datatype, external_id, etc.
         if self.DEF_CORE_FIELDS in csv_resource_def and csv_resource_def[self.DEF_CORE_FIELDS]:
-            for field_def in csv_resource_def[self.DEF_CORE_FIELDS]:
-                value = self.get_resource_field(csv_row, field_def)
-                if value is not None:
-                    # Only save the value if it is not None
-                    ocl_resource[field_def[self.DEF_KEY_RESOURCE_FIELD]] = value
+            ocl_resource.update(self.process_resource_def(
+                csv_row, csv_resource_def[self.DEF_CORE_FIELDS]))
+
+        # Build mapping to/from concept URLs if not provided
+        if ocl_resource_type == oclconstants.OclConstants.RESOURCE_TYPE_MAPPING:
+            # Build from_concept_url if not provided
+            ocl_resource['from_concept_url'] = OclCsvToJsonConverter.get_concept_url(
+                concept_url=ocl_resource.pop('from_concept_url', ''),
+                owner_id=ocl_resource.pop('from_concept_owner_id', ''),
+                owner_type=ocl_resource.pop(
+                    'from_concept_owner_type',
+                    oclconstants.OclConstants.RESOURCE_TYPE_ORGANIZATION),
+                source=ocl_resource.pop('from_concept_source', ''),
+                concept_id=ocl_resource.pop('from_concept_id', ''))
+
+            # Build to_concept_url if not provided
+            ocl_resource['to_concept_url'] = OclCsvToJsonConverter.get_concept_url(
+                concept_url=ocl_resource.pop('to_concept_url', ''),
+                owner_id=ocl_resource.pop('to_concept_owner_id', ''),
+                owner_type=ocl_resource.pop(
+                    'to_concept_owner_type',
+                    oclconstants.OclConstants.RESOURCE_TYPE_ORGANIZATION),
+                source=ocl_resource.pop('to_concept_source', ''),
+                concept_id=ocl_resource.pop('to_concept_id', ''))
 
         # Set sub-resources, eg concept names/descriptions
         if self.DEF_SUB_RESOURCES in csv_resource_def and csv_resource_def[self.DEF_SUB_RESOURCES]:
             for group_name in csv_resource_def[self.DEF_SUB_RESOURCES]:  # eg "names","descriptions"
                 ocl_resource[group_name] = []
                 for dict_def in csv_resource_def[self.DEF_SUB_RESOURCES][group_name]:
-                    ocl_sub_resource = {}
-                    for field_def in dict_def:
-                        value = self.get_resource_field(csv_row, field_def)
-                        if value is not None:
-                            # Only save the value if it is not None
-                            ocl_resource[field_def[self.DEF_KEY_RESOURCE_FIELD]] = value
+                    ocl_sub_resource = self.process_resource_def(csv_row, dict_def)
                     if ocl_sub_resource:
                         ocl_resource[group_name].append(ocl_sub_resource)
 
         # Key value pairs, eg custom attributes
-        if self.DEF_KEY_VALUE_PAIRS in csv_resource_def and csv_resource_def[self.DEF_KEY_VALUE_PAIRS]:
+        if self.DEF_KEY_VALUE_PAIRS in csv_resource_def and csv_resource_def[
+                self.DEF_KEY_VALUE_PAIRS]:
             for group_name in csv_resource_def[self.DEF_KEY_VALUE_PAIRS]:
                 ocl_resource[group_name] = {}
                 for kvp_def in csv_resource_def[self.DEF_KEY_VALUE_PAIRS][group_name]:
@@ -247,10 +306,12 @@ class OclCsvToJsonConverter(object):
                         if kvp_def['key_column'] in csv_row and csv_row[kvp_def['key_column']]:
                             key = csv_row[kvp_def['key_column']]
                         else:
-                            err_msg = 'key_column "%s" must be non-empty in CSV within key_value_pair: %s' % (kvp_def['key_column'], kvp_def)
+                            err_msg = ('key_column "%s" must be non-empty in CSV within '
+                                       'key_value_pair: %s' % (kvp_def['key_column'], kvp_def))
                             raise Exception(err_msg)
                     else:
-                        err_msg = 'Expected "key" or "key_column" key in key_value_pair definition, but neither found: %s' % kvp_def
+                        err_msg = ('Expected "key" or "key_column" key in key_value_pair '
+                                   'definition, but neither found: %s' % kvp_def)
                         raise Exception(err_msg)
 
                     # Value
@@ -260,12 +321,17 @@ class OclCsvToJsonConverter(object):
                         if kvp_def['value_column'] in csv_row:
                             value = csv_row[kvp_def['value_column']]
                         else:
-                            raise Exception('value_column "%s" does not exist in CSV for key_value_pair: %s' % (kvp_def['value_column'], kvp_def))
+                            err_msg = ('value_column "%s" does not exist in CSV for '
+                                       'key_value_pair: %s' % (kvp_def['value_column'], kvp_def))
+                            raise Exception(err_msg)
                     else:
-                        raise Exception('Expected "value" or "value_column" key in key_value_pair definition, but neither found: %s' % kvp_def)
+                        err_msg = ('Expected "value" or "value_column" key in key_value_pair '
+                                   'definition, but neither found: %s' % kvp_def)
+                        raise Exception(err_msg)
 
                     # Set the key-value pair
-                    if key and (value or ('omit_if_empty_value' in kvp_def and not kvp_def['omit_if_empty_value'])):
+                    if key and (value or ('omit_if_empty_value' in kvp_def and not kvp_def[
+                            'omit_if_empty_value'])):
                         ocl_resource[group_name][key] = value
 
         # Handle auto-names
@@ -289,15 +355,11 @@ class OclCsvToJsonConverter(object):
             if extra_attr:
                 ocl_resource['extras'] = extra_attr
 
-        # Output the OCL resource JSON
+        # Optionally display debug info
         if self.verbose:
             print json.dumps(ocl_resource)
-        if self.output_filename:
-            output_file = open(self.output_filename, 'a')
-            output_file.write(json.dumps(ocl_resource))
-            output_file.write('\n')
-        else:
-            self.output_list.append(ocl_resource)
+
+        return ocl_resource
 
     def get_auto_extra_attributes(self, csv_row, auto_attributes_def):
         """
@@ -315,8 +377,8 @@ class OclCsvToJsonConverter(object):
            definition.
 
         Brief CSV example:
-        attr:my-custom-attribute, attr_key[1], attr_value[1], attr_key[27], attr_value[27]
-        value for my-custom-attribute, My unique key for this row, the for "My unique key for this row", Another key, Another value
+        attr:my-attribute,attr_key[1],attr_value[1],attr_key[27],attr_value[27]
+        my-attribute value,This row's key,"This row's key",Another key,Another value
         """
         extra_attributes = {}
         keyless_values = {}
@@ -324,7 +386,8 @@ class OclCsvToJsonConverter(object):
 
         # Determine whether to omit blank values (default = True)
         omit_if_empty_value = True
-        if 'omit_if_empty_value' in auto_attributes_def and not auto_attributes_def['omit_if_empty_value']:
+        if 'omit_if_empty_value' in auto_attributes_def and not auto_attributes_def[
+                'omit_if_empty_value']:
             omit_if_empty_value = False
 
         # Prepare search strings
@@ -388,7 +451,9 @@ class OclCsvToJsonConverter(object):
         return extra_attributes
 
     def get_auto_sub_resources(self, csv_row, auto_sub_resources_def):
-        """ Auto-generate sub_resources for the CSV row based on the specified definition """
+        """
+        Get a list of auto-generated sub_resources for the CSV row based on the specified definition
+        """
         if 'sub_resource_type' not in auto_sub_resources_def:
             raise Exception('Missing required "sub_resource_type" in auto_sub_resources definition')
 
@@ -396,65 +461,142 @@ class OclCsvToJsonConverter(object):
 
         # Add primary sub resource (if defined)
         if 'primary_sub_resource' in auto_sub_resources_def:
-            sub_resource = {}
-            for field_def in auto_sub_resources_def['primary_sub_resource']:
-                value = self.get_resource_field(csv_row, field_def)
-                if value is not None:
-                    sub_resource[field_def[self.DEF_KEY_RESOURCE_FIELD]] = value
+            sub_resource = self.process_resource_def(
+                csv_row, auto_sub_resources_def['primary_sub_resource'])
             if sub_resource:
                 sub_resources.append(sub_resource)
 
+        # Add auto sub resources
         if 'auto_sub_resources' in auto_sub_resources_def:
-            unique_auto_resource_indexes = self.get_unique_csv_row_auto_indexes(
-                auto_sub_resources_def, csv_row)
+            unique_auto_resource_indexes = OclCsvToJsonConverter.get_unique_csv_row_auto_indexes(
+                index_prefix=auto_sub_resources_def['index_prefix'],
+                index_postfix=auto_sub_resources_def['index_postfix'],
+                index_regex=auto_sub_resources_def['index_regex'],
+                resource_def_template=auto_sub_resources_def['auto_sub_resources'],
+                csv_row=csv_row)
             for auto_resource_index in unique_auto_resource_indexes:
-                sub_resource = {}
-                sub_resource_def = self.generate_sub_resource_def(
-                    auto_resource_index, auto_sub_resources_def['auto_sub_resources'])
-                for field_def in sub_resource_def:
-                    value = self.get_resource_field(csv_row, field_def)
-                    if value is not None:
-                        sub_resource[field_def[self.DEF_KEY_RESOURCE_FIELD]] = value
+                sub_resource_def = OclCsvToJsonConverter.generate_resource_def_from_template(
+                    index_prefix=auto_sub_resources_def['index_prefix'],
+                    index_postfix=auto_sub_resources_def['index_postfix'],
+                    auto_resource_index=auto_resource_index,
+                    resource_def_template=auto_sub_resources_def['auto_sub_resources'])
+                sub_resource = self.process_resource_def(csv_row, sub_resource_def)
                 if sub_resource:
                     sub_resources.append(sub_resource)
 
         return sub_resources
 
-    def generate_sub_resource_def(self, auto_resource_index, auto_sub_resources_def):
-        """ Get a set of traditional CSV resource definitions for the specified auto index """
-        traditional_sub_resource_def = []
-        for field_def in auto_sub_resources_def:
-            new_field_def = field_def.copy()
-            new_field_def.pop('column_prefix')
-            new_field_def['column'] = '%s%s%s%s' % (
-                auto_sub_resources_def['column_prefix'],
-                auto_sub_resources_def['index_prefix'],
-                auto_resource_index,
-                auto_sub_resources_def['index_prefix'])
-            traditional_sub_resource_def.append(new_field_def)
-        return traditional_sub_resource_def
+    @staticmethod
+    def replace_auto_field(prefix_field_to_replace, new_field_name, index_prefix, index_postfix,
+                           auto_resource_index, resource_def_template):
+        if prefix_field_to_replace in resource_def_template:
+            field_prefix = resource_def_template.pop(prefix_field_to_replace)
+            auto_field_name = '%s%s%s%s' % (
+                field_prefix, index_prefix, auto_resource_index, index_postfix)
+            resource_def_template[new_field_name] = auto_field_name
 
-    def get_unique_csv_row_auto_indexes(self, auto_sub_resources_def, csv_row):
+    @staticmethod
+    def generate_resource_def_from_template(index_prefix, index_postfix, auto_resource_index,
+                                            resource_def_template):
         """
-        Return list of unique auto indexes in the CSV row as defined by the auto_sub_resources_def
+        Get a resource definition for the specified resource definition template and auto index
+        """
+        if isinstance(resource_def_template, dict):
+            resource_def_template = resource_def_template.copy()
+            # Replace the resource definition prefix fields
+            for prefix_field_to_replace in OclCsvToJsonConverter.AUTO_REPLACEMENT_FIELDS:
+                OclStandardCsvToJsonConverter.replace_auto_field(
+                    prefix_field_to_replace=prefix_field_to_replace,
+                    new_field_name=OclCsvToJsonConverter.AUTO_REPLACEMENT_FIELDS[
+                        prefix_field_to_replace],
+                    index_prefix=index_prefix, index_postfix=index_postfix,
+                    auto_resource_index=auto_resource_index,
+                    resource_def_template=resource_def_template)
+            # Replace the field definition prefix fields
+            for resource_field_type in OclCsvToJsonConverter.DEF_RESOURCE_FIELD_TYPES:
+                if resource_field_type in resource_def_template:
+                    resource_def_template[resource_field_type] = OclCsvToJsonConverter.generate_resource_def_from_template(
+                        index_prefix=index_prefix, index_postfix=index_postfix,
+                        auto_resource_index=auto_resource_index,
+                        resource_def_template=resource_def_template[resource_field_type])
+            return resource_def_template
+        elif isinstance(resource_def_template, list):
+            new_field_defs = []
+            for current_field_def in resource_def_template:
+                new_field_def = current_field_def.copy()
+                if 'column_prefix' in new_field_def:
+                    column_prefix = new_field_def.pop('column_prefix')
+                    new_column_name = '%s%s%s%s' % (
+                        column_prefix, index_prefix, auto_resource_index, index_postfix)
+                    if 'column' in new_field_def and new_field_def['column']:
+                        if not isinstance(new_field_def['column'], list):
+                            new_field_def['column'] = [new_field_def['column']]
+                        # Add new column to beginning of list so that it is searched first
+                        new_field_def['column'].insert(0, new_column_name)
+                    else:
+                        new_field_def['column'] = new_column_name
+                new_field_defs.append(new_field_def)
+            return new_field_defs
+        else:
+            err_msg = ('Invalid type "%s" for resource_def_template. '
+                       'Expected <list> or <dict>.') % str(type(resource_def_template))
+            raise Exception(err_msg)
+
+    @staticmethod
+    def get_unique_csv_row_auto_indexes(index_prefix, index_postfix, index_regex,
+                                        resource_def_template, csv_row):
+        """
+        Return list of unique auto indexes in the CSV row as defined by the resource_def_template.
+        Note that resource_def_template may be either a full resource_def (dict) or a
+        sub_resource_def (list).
         """
         unique_auto_resource_indexes = []
-        for column_name in csv_row:
-            for field_def in auto_sub_resources_def['auto_sub_resources']:
-                if column_name[:len(field_def['column_prefix'])] == field_def['column_prefix']:
-                    search_exp = r'^%s%s(%s)%s$' % (
-                        field_def['column_prefix'],
-                        re.escape(auto_sub_resources_def['index_prefix']),
-                        auto_sub_resources_def['index_regex'],
-                        re.escape(auto_sub_resources_def['index_postfix']))
-                    regex_match = re.search(search_exp, column_name)
-                    if regex_match:
-                        index = regex_match.group(1)
-                        if index and index not in unique_auto_resource_indexes:
-                            unique_auto_resource_indexes.append(index)
+        if isinstance(resource_def_template, dict):
+            for resource_field_type in OclCsvToJsonConverter.DEF_RESOURCE_FIELD_TYPES:
+                if resource_field_type in resource_def_template:
+                    unique_auto_resource_indexes += OclCsvToJsonConverter.get_unique_csv_row_auto_indexes(
+                        index_prefix=index_prefix, index_postfix=index_postfix,
+                        index_regex=index_regex,
+                        resource_def_template=resource_def_template[resource_field_type],
+                        csv_row=csv_row)
+            # Dedup the list so that each auto-index only appears once
+            unique_auto_resource_indexes = [i for n, i in enumerate(
+                unique_auto_resource_indexes) if i not in unique_auto_resource_indexes[n + 1:]]
+        elif isinstance(resource_def_template, list):
+            for column_name in csv_row:
+                for field_def in resource_def_template:
+                    if 'column_prefix' not in field_def:
+                        continue
+                    if column_name[:len(field_def['column_prefix'])] == field_def['column_prefix']:
+                        search_exp = r'^%s%s(%s)%s$' % (
+                            field_def['column_prefix'], re.escape(index_prefix),
+                            index_regex, re.escape(index_postfix))
+                        regex_match = re.search(search_exp, column_name)
+                        if regex_match:
+                            index = regex_match.group(1)
+                            if index and index not in unique_auto_resource_indexes:
+                                unique_auto_resource_indexes.append(index)
+        else:
+            err_msg = ('Invalid type "%s" for resource_def_template. '
+                       'Expected <list> or <dict>.') % str(type(resource_def_template))
+            raise Exception(err_msg)
         return unique_auto_resource_indexes
 
-    def get_resource_field(self, csv_row, field_def):
+
+
+    def process_resource_def(self, csv_row, resource_def):
+        """
+        Returns a resource by processing a resource definition. A resource definition is a
+        list of field definitions.
+        """
+        new_resource = {}
+        for field_def in resource_def:
+            value = self.process_field_def(csv_row, field_def)
+            if value is not None:
+                new_resource[field_def[self.DEF_KEY_RESOURCE_FIELD]] = value
+        return new_resource
+
+    def process_field_def(self, csv_row, field_def):
         """ Processes a single resource field definition for the given CSV row """
         if self.DEF_KEY_RESOURCE_FIELD not in field_def:
             raise Exception(
@@ -466,22 +608,38 @@ class OclCsvToJsonConverter(object):
         """
         Return a value from a csv_row for the specified field definition.
         field_def must include 'resource_type' and either a 'column' or 'value' key or
-        both a 'csv_to_json_processor' and 'data_column' keys.
+        both a 'csv_to_json_processor' and 'data_column' keys. If 'column' is a list, then
+        the first non-empty column in the list that is present in the CSV row is used.
+        Set 'skip_empty_value' to False to not skip non-empty values.
         Optional keys include 'required', 'default', and 'datatype'
         """
         if 'column' in field_def:
-            if field_def['column'] not in csv_row and 'default' in field_def:
+            columns = field_def['column']
+            if not isinstance(field_def['column'], list):
+                columns = [columns]
+            skip_empty_value = True
+            if 'skip_empty_value' in field_def:
+                skip_empty_value = bool(skip_empty_value)
+            for column in columns:
+                if column in csv_row and (
+                        skip_empty_value and csv_row[column] or not skip_empty_value):
+                    if 'datatype' in field_def:
+                        return self.do_datatype_conversion(csv_row[column], field_def['datatype'])
+                    else:
+                        return csv_row[column]
+
+            # No value found from 'column', so apply default/required
+            if 'default' in field_def:
                 # Return 'default' if 'column' is not in CSV row
-                # TODO: If column exists but value is blank? Implement new attr to customize?
                 return field_def['default']
-            elif field_def['column'] not in csv_row and 'required' in field_def and not field_def['required']:
-                # Return None if no 'default' and 'column' is not in CSV and 'required' == False
-                return None
-            elif 'datatype' in field_def and field_def['column'] in csv_row and field_def['datatype'] == 'bool':
-                # Perform type conversion
-                return bool(csv_row[field_def['column']])
-            # Return the value in 'column', or throw error if not defined in the CSV row
-            return csv_row[field_def['column']]
+            elif 'required' in field_def and field_def['required']:
+                err_msg = 'Missing required column %s in CSV row: %s' % (
+                    field_def['column'], csv_row)
+                raise Exception(err_msg)
+
+            # Return None if no value found and not required
+            return None
+
         elif 'value' in field_def:
             # Just return whatever is in the 'value' definition
             return field_def['value']
@@ -490,8 +648,18 @@ class OclCsvToJsonConverter(object):
             method_to_call = getattr(self, field_def['csv_to_json_processor'])
             return method_to_call(csv_row, field_def)
         else:
-            raise Exception(
-                'Expected "column", "value", or "csv_to_json_processor" key in standard column definition, but none found: %s' % field_def)
+            err_msg = ('Expected "column", "value", or "csv_to_json_processor" key in field'
+                       'definition, but none found: %s' % field_def)
+            raise Exception(err_msg)
+
+    def do_datatype_conversion(self, value, datatype):
+        """
+        Convert the value to the specified datatype, where datatype is a string of the name of the
+        desired datatype (e.g. datatype="bool").
+        """
+        if datatype == 'bool':
+            return bool(value)
+        return value
 
     def process_reference(self, csv_row, field_def):
         """
@@ -518,6 +686,14 @@ class OclCsvToJsonConverter(object):
             if unformatted_id[index] in chars_to_remove:
                 formatted_id[index] = self.REPLACE_CHAR
         return ''.join(formatted_id)
+
+    @staticmethod
+    def get_concept_url(concept_url='', owner_id='', owner_type='', source='', concept_id=''):
+        if concept_url:
+            return concept_url
+        return '%s/concepts/%s/' % (oclconstants.OclConstants.get_repository_url(
+            owner_id=owner_id, owner_type=owner_type, repository_id=source,
+            repository_type=oclconstants.OclConstants.RESOURCE_TYPE_SOURCE), concept_id)
 
 
 class OclStandardCsvToJsonConverter(OclCsvToJsonConverter):
@@ -703,6 +879,71 @@ class OclStandardCsvToJsonConverter(OclCsvToJsonConverter):
             }
         },
         {
+            'definition_name': 'Generic Auto Concept Mappings',
+            'is_active': True,
+            'resource_type': OclCsvToJsonConverter.DEF_TYPE_AUTO_RESOURCE,
+            '__trigger_column': 'resource_type',
+            '__trigger_value': oclconstants.OclConstants.RESOURCE_TYPE_CONCEPT,
+            OclCsvToJsonConverter.DEF_AUTO_RESOURCE_TEMPLATE: {
+                'definition_name': 'Generic Concept Mapping',
+                'resource_type': oclconstants.OclConstants.RESOURCE_TYPE_MAPPING,
+                'index_prefix': '[',
+                'index_postfix': ']',
+                'index_regex': '[0-9]+',
+                'skip_if_empty_column_prefix': 'map_to_concept_id',
+                OclCsvToJsonConverter.DEF_CORE_FIELDS: [
+                    {'resource_field': 'map_type', 'column_prefix': 'map_type'},
+                    {'resource_field': 'from_concept_url', 'column_prefix': 'map_from_concept_url',
+                     'required': False},
+                    {'resource_field': 'from_concept_id', 'column_prefix': 'map_from_concept_id',
+                     'column': 'id', 'required': False},
+                    {'resource_field': 'from_concept_owner_id', 'column': 'owner_id',
+                     'column_prefix': 'map_from_concept_owner_id', 'required': False},
+                    {'resource_field': 'from_concept_owner_type', 'column': 'owner_type',
+                     'column_prefix': 'map_from_concept_owner_type',
+                     'default': oclconstants.OclConstants.RESOURCE_TYPE_ORGANIZATION},
+                    {'resource_field': 'from_concept_source', 'column': 'source',
+                     'column_prefix': 'map_from_concept_source', 'required': False},
+                    {'resource_field': 'to_concept_url', 'column_prefix': 'map_to_concept_url',
+                     'required': False},
+                    {'resource_field': 'to_concept_id', 'column_prefix': 'map_to_concept_id',
+                     'required': False},
+                    {'resource_field': 'to_concept_name', 'column_prefix': 'map_to_concept_name',
+                     'required': False},
+                    {'resource_field': 'to_concept_owner_id', 'column': 'owner_id',
+                     'column_prefix': 'map_to_concept_owner_id', 'required': False},
+                    {'resource_field': 'to_concept_owner_type', 'column': 'owner_type',
+                     'column_prefix': 'map_to_concept_owner_type',
+                     'default': oclconstants.OclConstants.RESOURCE_TYPE_ORGANIZATION},
+                    {'resource_field': 'to_concept_source', 'column': 'source',
+                     'column_prefix': 'map_to_concept_source', 'required': False},
+                    {'resource_field': 'owner', 'column_prefix': 'map_owner_id',
+                     'column': 'owner_id'},
+                    {'resource_field': 'owner_type', 'column_prefix': 'map_owner_type',
+                     'column': 'owner_type',
+                     'default': oclconstants.OclConstants.RESOURCE_TYPE_ORGANIZATION},
+                    {'resource_field': 'source', 'column_prefix': 'map_source', 'column': 'source'},
+                ],
+            },
+        },
+        {
+            'definition_name': 'Generic Standalone Mapping',
+            'is_active': False,
+            'resource_type': oclconstants.OclConstants.RESOURCE_TYPE_MAPPING,
+            '__trigger_column': 'resource_type',
+            '__trigger_value': oclconstants.OclConstants.RESOURCE_TYPE_MAPPING,
+            'skip_if_empty_column': 'parent_ocl_id_1',
+            OclCsvToJsonConverter.DEF_CORE_FIELDS: [
+                {'resource_field': 'from_concept_url', 'column': 'from_concept_url_1'},
+                {'resource_field': 'map_type', 'column': 'map_type'},
+                {'resource_field': 'to_concept_url', 'column': 'to_concept_url'},
+                {'resource_field': 'owner', 'column': 'owner_id'},
+                {'resource_field': 'owner_type', 'column':'owner_type',
+                 'default': oclconstants.OclConstants.RESOURCE_TYPE_ORGANIZATION},
+                {'resource_field': 'source', 'column': 'ocl_source_id'},
+            ]
+        },
+        {
             'definition_name': 'Generic Source Version',
             'is_active': True,
             'resource_type': oclconstants.OclConstants.RESOURCE_TYPE_SOURCE_VERSION,
@@ -738,46 +979,10 @@ class OclStandardCsvToJsonConverter(OclCsvToJsonConverter):
                 {'resource_field': 'collection', 'column': 'collection'},
             ],
         },
-        {
-            'definition_name': 'Generic Concept Mapping',
-            'is_active': False,
-            'resource_type': oclconstants.OclConstants.RESOURCE_TYPE_MAPPING,
-            '__trigger_column': 'resource_type',
-            '__trigger_value': oclconstants.OclConstants.RESOURCE_TYPE_CONCEPT,
-            'skip_if_empty_column': 'parent_ocl_id_1',
-            OclCsvToJsonConverter.DEF_AUTO_CONCEPT_MAPPINGS: {
-            },
-            OclCsvToJsonConverter.DEF_CORE_FIELDS: [
-                {'resource_field': 'from_concept_url', 'column': 'from_concept_url_1'},
-                {'resource_field': 'map_type', 'column': 'map_type'},
-                {'resource_field': 'to_concept_url', 'column': 'to_concept_url'},
-                {'resource_field': 'owner', 'column': 'ocl_org_id'},
-                {'resource_field': 'owner_type', 'column':'owner_type',
-                 'default': oclconstants.OclConstants.RESOURCE_TYPE_ORGANIZATION},
-                {'resource_field': 'source', 'column': 'ocl_source_id'},
-            ]
-        },
-        {
-            'definition_name': 'Generic Standalone Mapping',
-            'is_active': False,
-            'resource_type': oclconstants.OclConstants.RESOURCE_TYPE_MAPPING,
-            '__trigger_column': 'resource_type',
-            '__trigger_value': oclconstants.OclConstants.RESOURCE_TYPE_MAPPING,
-            'skip_if_empty_column': 'parent_ocl_id_1',
-            OclCsvToJsonConverter.DEF_CORE_FIELDS: [
-                {'resource_field': 'from_concept_url', 'column': 'from_concept_url_1'},
-                {'resource_field': 'map_type', 'column': 'map_type'},
-                {'resource_field': 'to_concept_url', 'column': 'to_concept_url'},
-                {'resource_field': 'owner', 'column': 'owner_id'},
-                {'resource_field': 'owner_type', 'column':'owner_type',
-                 'default': oclconstants.OclConstants.RESOURCE_TYPE_ORGANIZATION},
-                {'resource_field': 'source', 'column': 'ocl_source_id'},
-            ]
-        },
     ]
 
-    def __init__(self, output_filename='', csv_filename='', input_list=None, verbose=False):
+    def __init__(self, csv_filename='', input_list=None, verbose=False):
         """ Initialize the object with the standard CSV resource definition """
         OclCsvToJsonConverter.__init__(
-            self, output_filename=output_filename, csv_filename=csv_filename, input_list=input_list,
+            self, csv_filename=csv_filename, input_list=input_list,
             csv_resource_definitions=self.default_csv_resource_definitions, verbose=verbose)
