@@ -1,33 +1,10 @@
 """
-Convert CSV to OCL-formatted JSON file.
-
-Script to convert a CSV file to an OCL-formatted JSON file based on a provided
-set of CSV Resource Definitions. The resulting JSON is intended for the
-OclFlexImporter and does not work with the batch concept/mapping importer.
-
-Definitions take the form:
-    csv_resource_definitions = [
-        'definition_name': 'My Concept Definition',
-        'resource_type': oclconstants.OclConstants.RESOURCE_TYPE_CONCEPT,
-        'id_column':'id',
-        'skip_if_empty_column':'id',
-        OclCsvToJsonConverter.DEF_CORE_FIELDS:[
-            {'resource_field':...}
-        ],
-        OclCsvToJsonConverter.DEF_SUB_RESOURCES:{
-            'names':[],
-            'descriptions':[],
-        },
-        OclCsvToJsonConverter.DEF_KEY_VALUE_PAIRS:{
-            'extras':[],
-        },
-    ]
-
-Note that all defined resource_fields are required unless "required": False or a "default"
-is included in their definition.
-
-Things that are missing:
-- Standalone Mappings, Concept Mappings, Concept/Mappings References
+Script to convert a CSV file to an OCL-formatted JSON file based on a provided set of CSV Resource
+Definitions. The resulting JSON is intended for the OclFlexImporter. See
+OclStandardCsvToJsonConverter.default_csv_resource_definitions in this file for examples.
+Note that resource_fields are required unless "required": False or a "default" is included.
+Next things to add:
+- Concept/Mappings References
 - Improve type conversion functionality (e.g. datatype: bool)
 - No script-level validation supported (meaning, validation occurs when submitting to OCL)
 """
@@ -84,13 +61,12 @@ class OclCsvToJsonConverter(object):
                  csv_resource_definitions=None, verbose=False):
         """
         Initialize this object
-        Parameters:
-          csv_filename <string> - Filename to load CSV data from; use "input_list"
-                if CSV already loaded into list
-          input_list <list> - List of dictionaries objects representing each row of the CSV file
-          csv_resource_definitions <dict> - Properly formatted dictionary defining
-                how to convert CSV to OCL-JSON
-          verbose <int> - 0=off, 1=some debug info, 2=all debug info
+        :param csv_filename: <string> Filename to load CSV data from; use "input_list"
+            if CSV already loaded into list
+        :param input_list: <list> List of dictionaries objects representing each row of the CSV file
+        :param csv_resource_definitions: <dict> Properly formatted dictionary defining
+            how to convert CSV to OCL-JSON
+        :param verbose: <int> 0=off, 1=some debug info, 2=all debug info
         """
         self.csv_filename = csv_filename
         self.input_list = input_list
@@ -178,25 +154,25 @@ class OclCsvToJsonConverter(object):
         # TRIGGER: Skip row if the trigger column does not equal trigger_value
         if self.DEF_KEY_TRIGGER_COLUMN in csv_resource_def:
             if csv_resource_def[self.DEF_KEY_TRIGGER_COLUMN] not in csv_row:
-                return
+                return None
             if csv_row[csv_resource_def[self.DEF_KEY_TRIGGER_COLUMN]] != csv_resource_def[
                     self.DEF_KEY_TRIGGER_VALUE]:
-                return
+                return None
 
-        # SKIP_IF_EMPTY: Skip if SKIP_IF_EMPTY column has a blank value
+        # SKIP_IF_EMPTY: Skip if all SKIP_IF_EMPTY columns have blank values
         is_skip_row = False
         if self.DEF_KEY_SKIP_IF_EMPTY in csv_resource_def and csv_resource_def[
                 self.DEF_KEY_SKIP_IF_EMPTY]:
+            has_non_empty_cell = False
             skip_columns = csv_resource_def[self.DEF_KEY_SKIP_IF_EMPTY]
             if not isinstance(skip_columns, list):
                 skip_columns = [skip_columns]
             for skip_column in skip_columns:
-                if skip_column not in csv_row:
-                    raise Exception("%s '%s' is not defined in the CSV file" % (
-                        self.DEF_KEY_SKIP_IF_EMPTY, skip_column))
-                if csv_row[skip_column] == '':
-                    is_skip_row = True
+                if skip_column in csv_row and csv_row[skip_column] != '':
+                    has_non_empty_cell = True
                     break
+            if not has_non_empty_cell:
+                is_skip_row = True
         elif 'skip_handler' in csv_resource_def:
             handler = getattr(self, csv_resource_def['skip_handler'])
             if not handler:
@@ -207,7 +183,7 @@ class OclCsvToJsonConverter(object):
             if self.verbose:
                 # print 'SKIPPING: %s' % (csv_resource_def['definition_name'])
                 pass
-            return
+            return None
 
         # Either process batch of auto resources or build individual resource
         ocl_resource_type = csv_resource_def[self.DEF_KEY_RESOURCE_TYPE]
@@ -243,10 +219,8 @@ class OclCsvToJsonConverter(object):
         ocl_resource = {'type': ocl_resource_type}
 
         # Determine resource's ID and auto-replace invalid ID characters
-        has_id_column = False
         id_column = None
         if self.DEF_KEY_ID_COLUMN in csv_resource_def and csv_resource_def[self.DEF_KEY_ID_COLUMN]:
-            has_id_column = True
             id_column = csv_resource_def[self.DEF_KEY_ID_COLUMN]
             if id_column not in csv_row or not csv_row[id_column]:
                 raise Exception('ID column %s not set or empty in row %s' % (id_column, csv_row))
@@ -489,11 +463,23 @@ class OclCsvToJsonConverter(object):
     @staticmethod
     def replace_auto_field(prefix_field_to_replace, new_field_name, index_prefix, index_postfix,
                            auto_resource_index, resource_def_template):
+        """
+        Replaces prefix fields (eg. 'skip_if_empty_column_prefix': 'map_to_concept_id') with an
+        indexed field (eg. 'skip_if_empty_column': 'map_to_concept_id[07]')
+        """
         if prefix_field_to_replace in resource_def_template:
-            field_prefix = resource_def_template.pop(prefix_field_to_replace)
-            auto_field_name = '%s%s%s%s' % (
-                field_prefix, index_prefix, auto_resource_index, index_postfix)
-            resource_def_template[new_field_name] = auto_field_name
+            field_prefixes = resource_def_template.pop(prefix_field_to_replace)
+            new_field_prefixes = []
+            if not isinstance(field_prefixes, list):
+                field_prefixes = [field_prefixes]
+            for field_prefix in field_prefixes:  # eg. field_prefix => 'map_to_concept_id'
+                auto_field_name = '%s%s%s%s' % (
+                    field_prefix, index_prefix, auto_resource_index, index_postfix)
+                new_field_prefixes.append(auto_field_name)
+            if len(new_field_prefixes) > 1:
+                resource_def_template[new_field_name] = new_field_prefixes
+            elif len(new_field_prefixes) == 1:
+                resource_def_template[new_field_name] = new_field_prefixes[0]
 
     @staticmethod
     def generate_resource_def_from_template(index_prefix, index_postfix, auto_resource_index,
@@ -582,8 +568,6 @@ class OclCsvToJsonConverter(object):
             raise Exception(err_msg)
         return unique_auto_resource_indexes
 
-
-
     def process_resource_def(self, csv_row, resource_def):
         """
         Returns a resource by processing a resource definition. A resource definition is a
@@ -625,8 +609,7 @@ class OclCsvToJsonConverter(object):
                         skip_empty_value and csv_row[column] or not skip_empty_value):
                     if 'datatype' in field_def:
                         return self.do_datatype_conversion(csv_row[column], field_def['datatype'])
-                    else:
-                        return csv_row[column]
+                    return csv_row[column]
 
             # No value found from 'column', so apply default/required
             if 'default' in field_def:
@@ -689,6 +672,7 @@ class OclCsvToJsonConverter(object):
 
     @staticmethod
     def get_concept_url(concept_url='', owner_id='', owner_type='', source='', concept_id=''):
+        """ Returns a concept URL """
         if concept_url:
             return concept_url
         return '%s/concepts/%s/' % (oclconstants.OclConstants.get_repository_url(
@@ -890,9 +874,10 @@ class OclStandardCsvToJsonConverter(OclCsvToJsonConverter):
                 'index_prefix': '[',
                 'index_postfix': ']',
                 'index_regex': '[0-9]+',
-                'skip_if_empty_column_prefix': 'map_to_concept_id',
+                'skip_if_empty_column_prefix': ['map_to_concept_id', 'map_to_concept_url'],
                 OclCsvToJsonConverter.DEF_CORE_FIELDS: [
-                    {'resource_field': 'map_type', 'column_prefix': 'map_type'},
+                    {'resource_field': 'map_type', 'column_prefix': 'map_type',
+                     'default': 'Same As'},
                     {'resource_field': 'from_concept_url', 'column_prefix': 'map_from_concept_url',
                      'required': False},
                     {'resource_field': 'from_concept_id', 'column_prefix': 'map_from_concept_id',
@@ -928,19 +913,42 @@ class OclStandardCsvToJsonConverter(OclCsvToJsonConverter):
         },
         {
             'definition_name': 'Generic Standalone Mapping',
-            'is_active': False,
+            'is_active': True,
             'resource_type': oclconstants.OclConstants.RESOURCE_TYPE_MAPPING,
             '__trigger_column': 'resource_type',
             '__trigger_value': oclconstants.OclConstants.RESOURCE_TYPE_MAPPING,
-            'skip_if_empty_column': 'parent_ocl_id_1',
+            'skip_if_empty_column': ['map_to_concept_id', 'to_concept_id',
+                                     'map_to_concept_url', 'to_concept_url'],
             OclCsvToJsonConverter.DEF_CORE_FIELDS: [
-                {'resource_field': 'from_concept_url', 'column': 'from_concept_url_1'},
-                {'resource_field': 'map_type', 'column': 'map_type'},
-                {'resource_field': 'to_concept_url', 'column': 'to_concept_url'},
-                {'resource_field': 'owner', 'column': 'owner_id'},
-                {'resource_field': 'owner_type', 'column':'owner_type',
+                {'resource_field': 'map_type', 'column': 'map_type', 'default': 'Same As'},
+                {'resource_field': 'from_concept_url', 'required': False,
+                 'column': ['map_from_concept_url', 'from_concept_url']},
+                {'resource_field': 'from_concept_id', 'required': False,
+                 'column': ['map_from_concept_id', 'from_concept_id']},
+                {'resource_field': 'from_concept_owner_id', 'required': False,
+                 'column': ['map_from_concept_owner_id', 'from_concept_owner_id', 'owner_id']},
+                {'resource_field': 'from_concept_owner_type',
+                 'column': ['map_from_concept_owner_type', 'from_concept_owner_type', 'owner_type'],
                  'default': oclconstants.OclConstants.RESOURCE_TYPE_ORGANIZATION},
-                {'resource_field': 'source', 'column': 'ocl_source_id'},
+                {'resource_field': 'from_concept_source', 'required': False,
+                 'column': ['map_from_concept_source', 'from_concept_source', 'source']},
+                {'resource_field': 'to_concept_url', 'required': False,
+                 'column': ['map_to_concept_url', 'to_concept_url']},
+                {'resource_field': 'to_concept_id', 'required': False,
+                 'column': ['map_to_concept_id', 'to_concept_id']},
+                {'resource_field': 'to_concept_name', 'required': False,
+                 'column': ['map_to_concept_name', 'to_concept_name']},
+                {'resource_field': 'to_concept_owner_id', 'required': False,
+                 'column': ['map_to_concept_owner_id', 'to_concept_owner_id', 'owner_id']},
+                {'resource_field': 'to_concept_owner_type',
+                 'column': ['map_to_concept_owner_type', 'to_concept_owner_type', 'owner_type'],
+                 'default': oclconstants.OclConstants.RESOURCE_TYPE_ORGANIZATION},
+                {'resource_field': 'to_concept_source', 'required': False,
+                 'column': ['map_to_concept_source', 'to_concept_source', 'source']},
+                {'resource_field': 'owner', 'column': ['map_owner_id', 'owner_id']},
+                {'resource_field': 'owner_type', 'column': ['map_owner_type', 'owner_type'],
+                 'default': oclconstants.OclConstants.RESOURCE_TYPE_ORGANIZATION},
+                {'resource_field': 'source', 'column': ['map_source', 'source']},
             ]
         },
         {
