@@ -3,10 +3,13 @@ Script to convert a CSV file to an OCL-formatted JSON file based on a provided s
 Definitions. The resulting JSON is intended for the OclFlexImporter. See
 OclStandardCsvToJsonConverter.default_csv_resource_definitions in this file for examples.
 Note that resource_fields are required unless "required": False or a "default" is included.
-Next things to add:
-- Concept/Mappings References
-- Improve type conversion functionality (e.g. datatype: bool)
-- No script-level validation supported (meaning, validation occurs when submitting to OCL)
+Next steps:
+- Implement support for:
+    (1) Generic Auto Concept External Mappings
+    (2) Generic Auto Concept References
+    (3) Generic Standalone External Mappings
+    (4) Generic Standalone References
+- Implement import script validation
 """
 import csv
 import json
@@ -642,10 +645,14 @@ class OclCsvToJsonConverter(object):
     def do_datatype_conversion(self, value, datatype):
         """
         Convert the value to the specified datatype, where datatype is a string of the name of the
-        desired datatype (e.g. datatype="bool").
+        desired datatype (e.g. datatype="bool", "int", "float").
         """
         if datatype == 'bool':
             return bool(value)
+        elif datatype == 'int':
+            return int(value)
+        elif datatype == 'float':
+            return float(value)
         return value
 
     def process_reference(self, csv_row, field_def):
@@ -721,7 +728,7 @@ class OclStandardCsvToJsonConverter(OclCsvToJsonConverter):
             'skip_if_empty_column': 'id',
             OclCsvToJsonConverter.DEF_CORE_FIELDS: [
                 {'resource_field': 'external_id', 'column': 'external_id', 'required': False},
-                {'resource_field': 'short_code', 'column': 'short_code', 'required': False},
+                {'resource_field': 'short_code', 'column': ['short_code', 'id'], 'required': False},
                 {'resource_field': 'name', 'column': 'name'},
                 {'resource_field': 'full_name', 'column': 'name', 'required': False},
                 {'resource_field': 'source_type', 'column': 'source_type', 'required': False},
@@ -757,7 +764,7 @@ class OclStandardCsvToJsonConverter(OclCsvToJsonConverter):
             'skip_if_empty_column': 'id',
             OclCsvToJsonConverter.DEF_CORE_FIELDS: [
                 {'resource_field': 'external_id', 'column': 'external_id', 'required': False},
-                {'resource_field': 'short_code', 'column': 'short_code', 'required': False},
+                {'resource_field': 'short_code', 'column': ['short_code', 'id'], 'required': False},
                 {'resource_field': 'name', 'column': 'name'},
                 {'resource_field': 'full_name', 'column': 'name', 'required': False},
                 {'resource_field': 'collection_type', 'column': 'collection_type',
@@ -865,7 +872,7 @@ class OclStandardCsvToJsonConverter(OclCsvToJsonConverter):
             }
         },
         {
-            'definition_name': 'Generic Auto Concept Mappings',
+            'definition_name': 'Generic Auto Concept Internal Mappings',
             'is_active': True,
             'resource_type': OclCsvToJsonConverter.DEF_TYPE_AUTO_RESOURCE,
             '__trigger_column': 'resource_type',
@@ -914,7 +921,7 @@ class OclStandardCsvToJsonConverter(OclCsvToJsonConverter):
             },
         },
         {
-            'definition_name': 'Generic Standalone Mapping',
+            'definition_name': 'Generic Standalone Internal Mapping',
             'is_active': True,
             'resource_type': oclconstants.OclConstants.RESOURCE_TYPE_MAPPING,
             '__trigger_column': 'resource_type',
