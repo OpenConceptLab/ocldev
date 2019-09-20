@@ -32,6 +32,14 @@ class OclConstants(object):
         RESOURCE_TYPE_COLLECTION_VERSION,
     ]
 
+    # Mapping descriptors
+    MAPPING_TARGET_INTERNAL = 'Internal'
+    MAPPING_TARGET_EXTERNAL = 'External'
+    MAPPING_TARGETS = [
+        MAPPING_TARGET_INTERNAL,
+        MAPPING_TARGET_EXTERNAL,
+    ]
+
     # API endpoint stems for owners
     OWNER_STEM_USERS = 'users'
     OWNER_STEM_ORGS = 'orgs'

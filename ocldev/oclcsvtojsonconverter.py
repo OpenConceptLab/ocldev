@@ -4,11 +4,7 @@ Definitions. The resulting JSON is intended for the OclFlexImporter. See
 OclStandardCsvToJsonConverter.default_csv_resource_definitions in this file for examples.
 Note that resource_fields are required unless "required": False or a "default" is included.
 Next steps:
-- Implement support for:
-    (1) Generic Auto Concept External Mappings
-    (2) Generic Auto Concept References
-    (3) Generic Standalone External Mappings
-    (4) Generic Standalone References
+- Implement support for: (1) Generic Auto Concept References, (2) Generic Standalone References
 - Implement import script validation
 """
 import csv
@@ -56,10 +52,6 @@ class OclCsvToJsonConverter(object):
         DEF_KEY_SKIP_IF_EMPTY_PREFIX: DEF_KEY_SKIP_IF_EMPTY,
     }
 
-    # Mapping descriptors
-    INTERNAL_MAPPING_ID = 'Internal'
-    EXTERNAL_MAPPING_ID = 'External'
-
     # Note that underscores are allowed for a concept ID and the exception is made in the code
     INVALID_CHARS = ' `~!@#$%^&*()_+-=[]{}\\|;:"\',/<>?'
     REPLACE_CHAR = '-'
@@ -82,6 +74,8 @@ class OclCsvToJsonConverter(object):
         self.verbose = verbose
         self.set_resource_definitions(csv_resource_definitions=csv_resource_definitions)
         self.output_list = []
+        self._current_row_num = 0
+        self._total_rows = 0
 
     def preprocess_csv_row(self, row, attr=None):
         """ Method intended to be overwritten in classes that extend this object """
@@ -104,12 +98,13 @@ class OclCsvToJsonConverter(object):
         """ Process CSV by applying all definitions to each row before moving to the next row """
         if self.csv_filename:
             self.load_csv(self.csv_filename)
-        row_i = 0
+        self._current_row_num = 0
+        self._total_rows = len(self.input_list)
         self.output_list = []
         for csv_row in self.input_list:
-            if num_rows and row_i >= num_rows:
+            if num_rows and self._current_row_num >= num_rows:
                 break
-            row_i += 1
+            self._current_row_num += 1
             csv_row = self.preprocess_csv_row(csv_row.copy(), attr)
             for csv_resource_def in self.csv_resource_definitions:
                 if (self.DEF_KEY_IS_ACTIVE in csv_resource_def and not csv_resource_def[
@@ -128,19 +123,21 @@ class OclCsvToJsonConverter(object):
         if self.csv_filename:
             self.load_csv(self.csv_filename)
         self.output_list = []
+        self._total_rows = len(self.input_list)
         for csv_resource_def in self.csv_resource_definitions:
             if self.DEF_KEY_IS_ACTIVE in csv_resource_def and not csv_resource_def[
                     self.DEF_KEY_IS_ACTIVE]:
                 continue
             if self.verbose:
-                print '\n%s' % ('*' * 100)
+                print '\n%s' % ('*' * 120)
                 print 'Processing definition: %s' % csv_resource_def['definition_name']
-                print '*' * 100
-            row_i = 0
+                # print csv_resource_def
+                print '*' * 120
+            self._current_row_num = 0
             for csv_row in self.input_list:
-                if num_rows and row_i >= num_rows:
+                if num_rows and self._current_row_num >= num_rows:
                     break
-                row_i += 1
+                self._current_row_num += 1
                 csv_row = self.preprocess_csv_row(csv_row.copy(), attr)
                 ocl_resources = self.process_csv_row_with_definition(
                     csv_row, csv_resource_def, attr=attr)
@@ -244,6 +241,12 @@ class OclCsvToJsonConverter(object):
 
         # Build mapping to/from concept URLs if not provided
         if ocl_resource_type == oclconstants.OclConstants.RESOURCE_TYPE_MAPPING:
+            # Determine whether mapping target is internal or external
+            map_target = ocl_resource.pop(
+                'map_target', oclconstants.OclConstants.MAPPING_TARGET_INTERNAL)
+            if map_target not in oclconstants.OclConstants.MAPPING_TARGETS:
+                map_target = oclconstants.OclConstants.MAPPING_TARGET_INTERNAL
+
             # Build from_concept_url if not provided
             ocl_resource['from_concept_url'] = OclCsvToJsonConverter.get_concept_url(
                 concept_url=ocl_resource.pop('from_concept_url', ''),
@@ -254,15 +257,20 @@ class OclCsvToJsonConverter(object):
                 source=ocl_resource.pop('from_concept_source', ''),
                 concept_id=ocl_resource.pop('from_concept_id', ''))
 
-            # Build to_concept_url if not provided
-            ocl_resource['to_concept_url'] = OclCsvToJsonConverter.get_concept_url(
-                concept_url=ocl_resource.pop('to_concept_url', ''),
-                owner_id=ocl_resource.pop('to_concept_owner_id', ''),
-                owner_type=ocl_resource.pop(
-                    'to_concept_owner_type',
-                    oclconstants.OclConstants.RESOURCE_TYPE_ORGANIZATION),
-                source=ocl_resource.pop('to_concept_source', ''),
-                concept_id=ocl_resource.pop('to_concept_id', ''))
+            # Handle to_concept_url based on Internal or External map target
+            if map_target == oclconstants.OclConstants.MAPPING_TARGET_INTERNAL:
+                ocl_resource['to_concept_url'] = OclCsvToJsonConverter.get_concept_url(
+                    concept_url=ocl_resource.pop('to_concept_url', ''),
+                    owner_id=ocl_resource.pop('to_concept_owner_id', ''),
+                    owner_type=ocl_resource.pop(
+                        'to_concept_owner_type',
+                        oclconstants.OclConstants.RESOURCE_TYPE_ORGANIZATION),
+                    source=ocl_resource.pop('to_concept_source', ''),
+                    concept_id=ocl_resource.pop('to_concept_id', ''))
+            elif 'to_concept_url' in ocl_resource and ocl_resource['to_concept_url']:
+                err_msg = ('External mapping must not have a '
+                           '"to_concept_url": %s' % ocl_resource['to_concept_url'])
+                raise Exception(err_msg)
 
         # Set sub-resources, eg concept names/descriptions
         if self.DEF_SUB_RESOURCES in csv_resource_def and csv_resource_def[self.DEF_SUB_RESOURCES]:
@@ -338,7 +346,11 @@ class OclCsvToJsonConverter(object):
 
         # Optionally display debug info
         if self.verbose:
-            print json.dumps(ocl_resource)
+            if self._current_row_num:
+                print '[Row %s of %s] %s' % (self._current_row_num, self._total_rows,
+                                             json.dumps(ocl_resource))
+            else:
+                print json.dumps(ocl_resource)
 
         return ocl_resource
 
@@ -715,7 +727,7 @@ class OclStandardCsvToJsonConverter(OclCsvToJsonConverter):
                 'value_column_prefix': 'attr_value',  # 2-digit number required, e.g. attr_value[01]
                 'index_prefix': '[',
                 'index_postfix': ']',
-                'index_regex': '[0-9]+',
+                'index_regex': '[a-zA-Z0-9\\-_]+',
             }
         },
         {
@@ -751,7 +763,7 @@ class OclStandardCsvToJsonConverter(OclCsvToJsonConverter):
                 'value_column_prefix': 'attr_value',  # 2-digit number required, e.g. attr_value[01]
                 'index_prefix': '[',
                 'index_postfix': ']',
-                'index_regex': '[0-9]+',
+                'index_regex': '[a-zA-Z0-9\\-_]+',
             }
         },
         {
@@ -788,7 +800,7 @@ class OclStandardCsvToJsonConverter(OclCsvToJsonConverter):
                 'value_column_prefix': 'attr_value',  # 2-digit number required, e.g. attr_value[01]
                 'index_prefix': '[',
                 'index_postfix': ']',
-                'index_regex': '[0-9]+',
+                'index_regex': '[a-zA-Z0-9\\-_]+',
             }
         },
         {
@@ -805,7 +817,7 @@ class OclStandardCsvToJsonConverter(OclCsvToJsonConverter):
                 {'resource_field': 'concept_class', 'column': 'concept_class'},
                 {'resource_field': 'datatype', 'column': 'datatype', 'default': 'None'},
                 {'resource_field': 'owner', 'column': 'owner_id'},
-                {'resource_field': 'owner_type', 'column':'owner_type',
+                {'resource_field': 'owner_type', 'column': 'owner_type',
                  'default': oclconstants.OclConstants.RESOURCE_TYPE_ORGANIZATION},
                 {'resource_field': 'source', 'column': 'source'},
             ],
@@ -822,7 +834,7 @@ class OclStandardCsvToJsonConverter(OclCsvToJsonConverter):
                 ],
                 'index_prefix': '[',
                 'index_postfix': ']',
-                'index_regex': '[0-9]+',
+                'index_regex': '[a-zA-Z0-9\\-_]+',
                 'auto_sub_resources': [
                     {'resource_field': 'name', 'column_prefix': 'name'},
                     {'resource_field': 'locale', 'column_prefix': 'name_locale', 'default': 'en'},
@@ -837,18 +849,18 @@ class OclStandardCsvToJsonConverter(OclCsvToJsonConverter):
             OclCsvToJsonConverter.DEF_AUTO_CONCEPT_DESCRIPTIONS: {
                 'sub_resource_type': 'descriptions',
                 'primary_sub_resource': [
-                    {'resource_field':'description', 'column':'description'},
-                    {'resource_field':'locale', 'column':'description_locale', 'default': 'en'},
-                    {'resource_field':'locale_preferred', 'column':'description_locale_preferred',
+                    {'resource_field': 'description', 'column': 'description'},
+                    {'resource_field': 'locale', 'column': 'description_locale', 'default': 'en'},
+                    {'resource_field': 'locale_preferred', 'column': 'description_locale_preferred',
                      'required': False},
-                    {'resource_field':'description_type', 'column':'description_type',
+                    {'resource_field': 'description_type', 'column': 'description_type',
                      'required': False},
-                    {'resource_field':'external_id', 'column':'description_external_id',
+                    {'resource_field': 'external_id', 'column': 'description_external_id',
                      'required': False},
                 ],
                 'index_prefix': '[',
                 'index_postfix': ']',
-                'index_regex': '[0-9]+',
+                'index_regex': '[a-zA-Z0-9\\-_]+',
                 'auto_sub_resources': [
                     {'resource_field': 'description', 'column_prefix': 'description'},
                     {'resource_field': 'locale', 'column_prefix': 'description_locale',
@@ -868,7 +880,7 @@ class OclStandardCsvToJsonConverter(OclCsvToJsonConverter):
                 'value_column_prefix': 'attr_value',  # 2-digit number required, e.g. attr_value[01]
                 'index_prefix': '[',
                 'index_postfix': ']',
-                'index_regex': '[0-9]+',
+                'index_regex': '[a-zA-Z0-9\\-_]+',
             }
         },
         {
@@ -878,13 +890,15 @@ class OclStandardCsvToJsonConverter(OclCsvToJsonConverter):
             '__trigger_column': 'resource_type',
             '__trigger_value': oclconstants.OclConstants.RESOURCE_TYPE_CONCEPT,
             OclCsvToJsonConverter.DEF_AUTO_RESOURCE_TEMPLATE: {
-                'definition_name': 'Generic Concept Mapping',
+                'definition_name': 'Generic Concept Internal Mapping',
                 'resource_type': oclconstants.OclConstants.RESOURCE_TYPE_MAPPING,
                 'index_prefix': '[',
                 'index_postfix': ']',
-                'index_regex': '[0-9]+',
+                'index_regex': '[a-zA-Z0-9\\-_]+',
                 'skip_if_empty_column_prefix': ['map_to_concept_id', 'map_to_concept_url'],
                 OclCsvToJsonConverter.DEF_CORE_FIELDS: [
+                    {'resource_field': 'map_target', 'column_prefix': 'map_target',
+                     'default': oclconstants.OclConstants.MAPPING_TARGET_INTERNAL},
                     {'resource_field': 'map_type', 'column_prefix': 'map_type',
                      'default': 'Same As'},
                     {'resource_field': 'from_concept_url', 'column_prefix': 'map_from_concept_url',
@@ -921,6 +935,58 @@ class OclStandardCsvToJsonConverter(OclCsvToJsonConverter):
             },
         },
         {
+            'definition_name': 'Generic Auto Concept External Mappings',
+            'is_active': True,
+            'resource_type': OclCsvToJsonConverter.DEF_TYPE_AUTO_RESOURCE,
+            '__trigger_column': 'resource_type',
+            '__trigger_value': oclconstants.OclConstants.RESOURCE_TYPE_CONCEPT,
+            OclCsvToJsonConverter.DEF_AUTO_RESOURCE_TEMPLATE: {
+                'definition_name': 'Generic Concept External Mapping',
+                'resource_type': oclconstants.OclConstants.RESOURCE_TYPE_MAPPING,
+                'index_prefix': '[',
+                'index_postfix': ']',
+                'index_regex': '[a-zA-Z0-9\\-_]+',
+                'skip_if_empty_column_prefix': ['extmap_to_concept_id', 'extmap_to_concept_url'],
+                OclCsvToJsonConverter.DEF_CORE_FIELDS: [
+                    {'resource_field': 'map_target', 'column_prefix': 'extmap_target',
+                     'default': oclconstants.OclConstants.MAPPING_TARGET_EXTERNAL},
+                    {'resource_field': 'map_type', 'column_prefix': 'extmap_type',
+                     'default': 'Same As'},
+                    {'resource_field': 'from_concept_url', 'required': False,
+                     'column_prefix': 'extmap_from_concept_url'},
+                    {'resource_field': 'from_concept_id', 'column_prefix': 'extmap_from_concept_id',
+                     'column': 'id', 'required': False},
+                    {'resource_field': 'from_concept_owner_id', 'column': 'owner_id',
+                     'column_prefix': 'extmap_from_concept_owner_id', 'required': False},
+                    {'resource_field': 'from_concept_owner_type', 'column': 'owner_type',
+                     'column_prefix': 'extmap_from_concept_owner_type',
+                     'default': oclconstants.OclConstants.RESOURCE_TYPE_ORGANIZATION},
+                    {'resource_field': 'from_concept_source', 'column': 'source',
+                     'column_prefix': 'extmap_from_concept_source', 'required': False},
+                    {'resource_field': 'to_concept_url', 'column_prefix': 'extmap_to_concept_url',
+                     'required': False},
+                    {'resource_field': 'to_concept_id', 'column_prefix': 'extmap_to_concept_id',
+                     'required': False},
+                    {'resource_field': 'to_concept_name', 'column_prefix': 'extmap_to_concept_name',
+                     'required': False},
+                    {'resource_field': 'to_concept_owner_id', 'column': 'owner_id',
+                     'column_prefix': 'extmap_to_concept_owner_id', 'required': False},
+                    {'resource_field': 'to_concept_owner_type', 'column': 'owner_type',
+                     'column_prefix': 'extmap_to_concept_owner_type',
+                     'default': oclconstants.OclConstants.RESOURCE_TYPE_ORGANIZATION},
+                    {'resource_field': 'to_concept_source', 'column': 'source',
+                     'column_prefix': 'extmap_to_concept_source', 'required': False},
+                    {'resource_field': 'owner', 'column_prefix': 'extmap_owner_id',
+                     'column': 'owner_id'},
+                    {'resource_field': 'owner_type', 'column_prefix': 'extmap_owner_type',
+                     'column': 'owner_type',
+                     'default': oclconstants.OclConstants.RESOURCE_TYPE_ORGANIZATION},
+                    {'resource_field': 'source', 'column_prefix': 'extmap_source',
+                     'column': 'source'},
+                ],
+            },
+        },
+        {
             'definition_name': 'Generic Standalone Internal Mapping',
             'is_active': True,
             'resource_type': oclconstants.OclConstants.RESOURCE_TYPE_MAPPING,
@@ -929,6 +995,8 @@ class OclStandardCsvToJsonConverter(OclCsvToJsonConverter):
             'skip_if_empty_column': ['map_to_concept_id', 'to_concept_id',
                                      'map_to_concept_url', 'to_concept_url'],
             OclCsvToJsonConverter.DEF_CORE_FIELDS: [
+                {'resource_field': 'map_target', 'column': 'map_target',
+                 'default': oclconstants.OclConstants.MAPPING_TARGET_INTERNAL},
                 {'resource_field': 'map_type', 'column': 'map_type', 'default': 'Same As'},
                 {'resource_field': 'from_concept_url', 'required': False,
                  'column': ['map_from_concept_url', 'from_concept_url']},
@@ -961,6 +1029,46 @@ class OclStandardCsvToJsonConverter(OclCsvToJsonConverter):
             ]
         },
         {
+            'definition_name': 'Generic Standalone External Mapping',
+            'is_active': True,
+            'resource_type': oclconstants.OclConstants.RESOURCE_TYPE_MAPPING,
+            '__trigger_column': 'resource_type',
+            '__trigger_value': 'External Mapping',  # Note deviation from RESOURCE_TYPE constants
+            'skip_if_empty_column': ['map_to_concept_id', 'to_concept_id',
+                                     'map_to_concept_url', 'to_concept_url'],
+            OclCsvToJsonConverter.DEF_CORE_FIELDS: [
+                {'resource_field': 'map_target', 'column': 'map_target',
+                 'default': oclconstants.OclConstants.MAPPING_TARGET_EXTERNAL},
+                {'resource_field': 'map_type', 'column': 'map_type', 'default': 'Same As'},
+                {'resource_field': 'from_concept_url', 'required': False,
+                 'column': ['map_from_concept_url', 'from_concept_url']},
+                {'resource_field': 'from_concept_id', 'required': False,
+                 'column': ['map_from_concept_id', 'from_concept_id']},
+                {'resource_field': 'from_concept_owner_id', 'required': False,
+                 'column': ['map_from_concept_owner_id', 'from_concept_owner_id', 'owner_id']},
+                {'resource_field': 'from_concept_owner_type',
+                 'column': ['map_from_concept_owner_type', 'from_concept_owner_type', 'owner_type'],
+                 'default': oclconstants.OclConstants.RESOURCE_TYPE_ORGANIZATION},
+                {'resource_field': 'from_concept_source', 'required': False,
+                 'column': ['map_from_concept_source', 'from_concept_source', 'source']},
+                {'resource_field': 'to_concept_id', 'required': False,
+                 'column': ['map_to_concept_id', 'to_concept_id']},
+                {'resource_field': 'to_concept_name', 'required': False,
+                 'column': ['map_to_concept_name', 'to_concept_name']},
+                {'resource_field': 'to_concept_owner_id', 'required': False,
+                 'column': ['map_to_concept_owner_id', 'to_concept_owner_id', 'owner_id']},
+                {'resource_field': 'to_concept_owner_type',
+                 'column': ['map_to_concept_owner_type', 'to_concept_owner_type', 'owner_type'],
+                 'default': oclconstants.OclConstants.RESOURCE_TYPE_ORGANIZATION},
+                {'resource_field': 'to_concept_source', 'required': False,
+                 'column': ['map_to_concept_source', 'to_concept_source', 'source']},
+                {'resource_field': 'owner', 'column': ['map_owner_id', 'owner_id']},
+                {'resource_field': 'owner_type', 'column': ['map_owner_type', 'owner_type'],
+                 'default': oclconstants.OclConstants.RESOURCE_TYPE_ORGANIZATION},
+                {'resource_field': 'source', 'column': ['map_source', 'source']},
+            ]
+        },
+        {
             'definition_name': 'Generic Source Version',
             'is_active': True,
             'resource_type': oclconstants.OclConstants.RESOURCE_TYPE_SOURCE_VERSION,
@@ -973,7 +1081,7 @@ class OclStandardCsvToJsonConverter(OclCsvToJsonConverter):
                 {'resource_field': 'released', 'column': 'released', 'required': False,
                  'datatype': 'bool'},
                 {'resource_field': 'owner', 'column': 'owner_id'},
-                {'resource_field': 'owner_type', 'column':'owner_type',
+                {'resource_field': 'owner_type', 'column': 'owner_type',
                  'default': oclconstants.OclConstants.RESOURCE_TYPE_ORGANIZATION},
                 {'resource_field': 'source', 'column': 'source'},
             ],
@@ -991,7 +1099,7 @@ class OclStandardCsvToJsonConverter(OclCsvToJsonConverter):
                 {'resource_field': 'released', 'column': 'released', 'required': False,
                  'datatype': 'bool'},
                 {'resource_field': 'owner', 'column': 'owner_id'},
-                {'resource_field': 'owner_type', 'column':'owner_type',
+                {'resource_field': 'owner_type', 'column': 'owner_type',
                  'default': oclconstants.OclConstants.RESOURCE_TYPE_ORGANIZATION},
                 {'resource_field': 'collection', 'column': 'collection'},
             ],
