@@ -1080,6 +1080,8 @@ class OclStandardCsvToJsonConverter(OclCsvToJsonConverter):
                 {'resource_field': 'description', 'column': 'description'},
                 {'resource_field': 'released', 'column': 'released', 'required': False,
                  'datatype': 'bool'},
+                {'resource_field': 'retired', 'column': 'retired', 'required': False,
+                 'datatype': 'bool'},
                 {'resource_field': 'owner', 'column': 'owner_id'},
                 {'resource_field': 'owner_type', 'column': 'owner_type',
                  'default': oclconstants.OclConstants.RESOURCE_TYPE_ORGANIZATION},
@@ -1097,6 +1099,8 @@ class OclStandardCsvToJsonConverter(OclCsvToJsonConverter):
             OclCsvToJsonConverter.DEF_CORE_FIELDS: [
                 {'resource_field': 'description', 'column': 'description'},
                 {'resource_field': 'released', 'column': 'released', 'required': False,
+                 'datatype': 'bool'},
+                {'resource_field': 'retired', 'column': 'retired', 'required': False,
                  'datatype': 'bool'},
                 {'resource_field': 'owner', 'column': 'owner_id'},
                 {'resource_field': 'owner_type', 'column': 'owner_type',
