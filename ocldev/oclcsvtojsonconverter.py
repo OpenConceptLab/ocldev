@@ -164,25 +164,7 @@ class OclCsvToJsonConverter(object):
                 return None
 
         # SKIP_IF_EMPTY: Skip if all SKIP_IF_EMPTY columns have blank values
-        is_skip_row = False
-        if self.DEF_KEY_SKIP_IF_EMPTY in csv_resource_def and csv_resource_def[
-                self.DEF_KEY_SKIP_IF_EMPTY]:
-            has_non_empty_cell = False
-            skip_columns = csv_resource_def[self.DEF_KEY_SKIP_IF_EMPTY]
-            if not isinstance(skip_columns, list):
-                skip_columns = [skip_columns]
-            for skip_column in skip_columns:
-                if skip_column in csv_row and csv_row[skip_column] != '':
-                    has_non_empty_cell = True
-                    break
-            if not has_non_empty_cell:
-                is_skip_row = True
-        elif 'skip_handler' in csv_resource_def:
-            handler = getattr(self, csv_resource_def['skip_handler'])
-            if not handler:
-                raise Exception(
-                    "skip_handler '" + csv_resource_def['skip_handler'] + "' is not defined")
-            is_skip_row = handler(csv_resource_def, csv_row)
+        is_skip_row = self.is_skip_row(csv_resource_def, csv_row)
         if is_skip_row:
             if self.verbose:
                 # print 'SKIPPING: %s' % (csv_resource_def['definition_name'])
@@ -214,6 +196,33 @@ class OclCsvToJsonConverter(object):
             return ocl_resources
         else:
             return self.build_resource(csv_row, csv_resource_def, attr=attr)
+
+    def is_skip_row(self, csv_resource_def, csv_row):
+        """
+        Determine if a skip row based on the DEF_KEY_SKIP_IF_EMPTY columns. Returns TRUE
+        only if all columns are empty.
+        TODO: Provide attribute to skip if ANY column is blank instead of ALL
+        """
+        is_skip_row = False
+        if self.DEF_KEY_SKIP_IF_EMPTY in csv_resource_def and csv_resource_def[
+                self.DEF_KEY_SKIP_IF_EMPTY]:
+            has_non_empty_cell = False
+            skip_columns = csv_resource_def[self.DEF_KEY_SKIP_IF_EMPTY]
+            if not isinstance(skip_columns, list):
+                skip_columns = [skip_columns]
+            for skip_column in skip_columns:
+                if skip_column in csv_row and csv_row[skip_column] != '':
+                    has_non_empty_cell = True
+                    break
+            if not has_non_empty_cell:
+                is_skip_row = True
+        elif 'skip_handler' in csv_resource_def:
+            handler = getattr(self, csv_resource_def['skip_handler'])
+            if not handler:
+                raise Exception(
+                    "skip_handler '" + csv_resource_def['skip_handler'] + "' is not defined")
+            is_skip_row = handler(csv_resource_def, csv_row)
+        return is_skip_row
 
     def build_resource(self, csv_row, csv_resource_def, attr=None):
         """ Build an OCL resource """
@@ -447,16 +456,16 @@ class OclCsvToJsonConverter(object):
         """
         Get a list of auto-generated sub_resources for the CSV row based on the specified definition
         """
+        sub_resources = []
         if 'sub_resource_type' not in auto_sub_resources_def:
             raise Exception('Missing required "sub_resource_type" in auto_sub_resources definition')
-
-        sub_resources = []
 
         # Add primary sub resource (if defined)
         if 'primary_sub_resource' in auto_sub_resources_def:
             sub_resource = self.process_resource_def(
                 csv_row, auto_sub_resources_def['primary_sub_resource'])
-            if sub_resource:
+            is_skip_row = self.is_skip_row(auto_sub_resources_def, csv_row)
+            if sub_resource and not is_skip_row:
                 sub_resources.append(sub_resource)
 
         # Add auto sub resources
@@ -474,7 +483,8 @@ class OclCsvToJsonConverter(object):
                     auto_resource_index=auto_resource_index,
                     resource_def_template=auto_sub_resources_def['auto_sub_resources'])
                 sub_resource = self.process_resource_def(csv_row, sub_resource_def)
-                if sub_resource:
+                is_skip_row = self.is_skip_row(auto_sub_resources_def, sub_resource)
+                if sub_resource and not is_skip_row:
                     sub_resources.append(sub_resource)
 
         return sub_resources
@@ -823,12 +833,14 @@ class OclStandardCsvToJsonConverter(OclCsvToJsonConverter):
             ],
             OclCsvToJsonConverter.DEF_AUTO_CONCEPT_NAMES: {
                 'sub_resource_type': 'names',
+                'skip_if_empty_column': 'name',
                 'primary_sub_resource': [
                     {'resource_field': 'name', 'column': 'name'},
                     {'resource_field': 'locale', 'column': 'name_locale', 'default': 'en'},
                     {'resource_field': 'locale_preferred', 'column': 'name_locale_preferred',
-                     'required': False},
-                    {'resource_field': 'name_type', 'column': 'name_type', 'required': False},
+                     'default': True},
+                    {'resource_field': 'name_type', 'column': 'name_type',
+                     'default': 'Fully Specified'},
                     {'resource_field': 'external_id', 'column': 'name_external_id',
                      'required': False},
                 ],
@@ -848,6 +860,7 @@ class OclStandardCsvToJsonConverter(OclCsvToJsonConverter):
             },
             OclCsvToJsonConverter.DEF_AUTO_CONCEPT_DESCRIPTIONS: {
                 'sub_resource_type': 'descriptions',
+                'skip_if_empty_column': 'description',
                 'primary_sub_resource': [
                     {'resource_field': 'description', 'column': 'description'},
                     {'resource_field': 'locale', 'column': 'description_locale', 'default': 'en'},
