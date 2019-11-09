@@ -38,6 +38,7 @@ class OclCsvToJsonConverter(object):
     DEF_KEY_SKIP_IF_EMPTY = 'skip_if_empty_column'
     DEF_KEY_TRIGGER_COLUMN = '__trigger_column'
     DEF_KEY_TRIGGER_VALUE = '__trigger_value'
+    DEF_KEY_SKIP_HANDLER = 'skip_handler'
 
     # Constants for automatic resource definitions
     DEF_TYPE_AUTO_RESOURCE = 'AUTO-RESOURCE'
@@ -47,6 +48,9 @@ class OclCsvToJsonConverter(object):
     DEF_AUTO_RESOURCE_TEMPLATE = 'auto_resource_template'
     DEF_KEY_TRIGGER_COLUMN_PREFIX = '__trigger_column_prefix'
     DEF_KEY_SKIP_IF_EMPTY_PREFIX = 'skip_if_empty_column_prefix'
+    DEF_KEY_AUTO_INDEX_PREFIX = 'index_prefix'
+    DEF_KEY_AUTO_INDEX_POSTFIX = 'index_postfix'
+    DEF_KEY_AUTO_INDEX_REGEX = 'index_regex'
     AUTO_REPLACEMENT_FIELDS = {
         DEF_KEY_TRIGGER_COLUMN_PREFIX: DEF_KEY_TRIGGER_COLUMN,
         DEF_KEY_SKIP_IF_EMPTY_PREFIX: DEF_KEY_SKIP_IF_EMPTY,
@@ -152,8 +156,9 @@ class OclCsvToJsonConverter(object):
 
         # Throw exception if resource_type not in the resource definition
         if self.DEF_KEY_RESOURCE_TYPE not in csv_resource_def:
-            raise Exception(
-                'Missing required "resource_type" in row definition:' % csv_resource_def)
+            err_msg = 'Missing required "%s" in row definition: %s' % (
+                self.DEF_KEY_RESOURCE_TYPE, csv_resource_def)
+            raise Exception(err_msg)
 
         # TRIGGER: Skip row if the trigger column does not equal trigger_value
         if self.DEF_KEY_TRIGGER_COLUMN in csv_resource_def:
@@ -177,17 +182,17 @@ class OclCsvToJsonConverter(object):
             auto_resource_def_template = csv_resource_def[
                 OclCsvToJsonConverter.DEF_AUTO_RESOURCE_TEMPLATE]
             unique_auto_resource_indexes = OclCsvToJsonConverter.get_unique_csv_row_auto_indexes(
-                index_prefix=auto_resource_def_template['index_prefix'],
-                index_postfix=auto_resource_def_template['index_postfix'],
-                index_regex=auto_resource_def_template['index_regex'],
+                index_prefix=auto_resource_def_template[self.DEF_KEY_AUTO_INDEX_PREFIX],
+                index_postfix=auto_resource_def_template[self.DEF_KEY_AUTO_INDEX_POSTFIX],
+                index_regex=auto_resource_def_template[self.DEF_KEY_AUTO_INDEX_REGEX],
                 resource_def_template=auto_resource_def_template,
                 csv_row=csv_row)
             ocl_resources = []
             for auto_index in unique_auto_resource_indexes:
                 resource_def = OclCsvToJsonConverter.generate_resource_def_from_template(
                     auto_resource_index=auto_index,
-                    index_prefix=auto_resource_def_template['index_prefix'],
-                    index_postfix=auto_resource_def_template['index_postfix'],
+                    index_prefix=auto_resource_def_template[self.DEF_KEY_AUTO_INDEX_PREFIX],
+                    index_postfix=auto_resource_def_template[self.DEF_KEY_AUTO_INDEX_POSTFIX],
                     resource_def_template=auto_resource_def_template)
                 ocl_resource = self.process_csv_row_with_definition(
                     csv_row, resource_def, attr=attr)
@@ -216,11 +221,12 @@ class OclCsvToJsonConverter(object):
                     break
             if not has_non_empty_cell:
                 is_skip_row = True
-        elif 'skip_handler' in csv_resource_def:
-            handler = getattr(self, csv_resource_def['skip_handler'])
+        elif OclCsvToJsonConverter.DEF_KEY_SKIP_HANDLER in csv_resource_def:
+            handler = getattr(self, csv_resource_def[OclCsvToJsonConverter.DEF_KEY_SKIP_HANDLER])
             if not handler:
-                raise Exception(
-                    "skip_handler '" + csv_resource_def['skip_handler'] + "' is not defined")
+                err_msg = "skip_handler '%s' is not defined" % csv_resource_def[
+                    OclCsvToJsonConverter.DEF_KEY_SKIP_HANDLER]
+                raise Exception(err_msg)
             is_skip_row = handler(csv_resource_def, csv_row)
         return is_skip_row
 
@@ -228,7 +234,7 @@ class OclCsvToJsonConverter(object):
         """ Build an OCL resource """
 
         # Start building the resource
-        ocl_resource_type = csv_resource_def['resource_type']
+        ocl_resource_type = csv_resource_def[self.DEF_KEY_RESOURCE_TYPE]
         ocl_resource = {'type': ocl_resource_type}
 
         # Determine resource's ID and auto-replace invalid ID characters
@@ -397,14 +403,14 @@ class OclCsvToJsonConverter(object):
             auto_attributes_def['standard_column_prefix'], auto_attributes_def['separator'])
         key_needle = '^%s%s(%s)%s$' % (
             auto_attributes_def['key_column_prefix'],
-            re.escape(auto_attributes_def['index_prefix']),
-            auto_attributes_def['index_regex'],
-            re.escape(auto_attributes_def['index_postfix']))
+            re.escape(auto_attributes_def[self.DEF_KEY_AUTO_INDEX_PREFIX]),
+            auto_attributes_def[self.DEF_KEY_AUTO_INDEX_REGEX],
+            re.escape(auto_attributes_def[self.DEF_KEY_AUTO_INDEX_POSTFIX]))
         value_needle = '^%s%s(%s)%s$' % (
             auto_attributes_def['value_column_prefix'],
-            re.escape(auto_attributes_def['index_prefix']),
-            auto_attributes_def['index_regex'],
-            re.escape(auto_attributes_def['index_postfix']))
+            re.escape(auto_attributes_def[self.DEF_KEY_AUTO_INDEX_PREFIX]),
+            auto_attributes_def[self.DEF_KEY_AUTO_INDEX_REGEX],
+            re.escape(auto_attributes_def[self.DEF_KEY_AUTO_INDEX_POSTFIX]))
 
         # Process CSV columns
         for column_name in csv_row:
@@ -471,15 +477,15 @@ class OclCsvToJsonConverter(object):
         # Add auto sub resources
         if 'auto_sub_resources' in auto_sub_resources_def:
             unique_auto_resource_indexes = OclCsvToJsonConverter.get_unique_csv_row_auto_indexes(
-                index_prefix=auto_sub_resources_def['index_prefix'],
-                index_postfix=auto_sub_resources_def['index_postfix'],
-                index_regex=auto_sub_resources_def['index_regex'],
+                index_prefix=auto_sub_resources_def[self.DEF_KEY_AUTO_INDEX_PREFIX],
+                index_postfix=auto_sub_resources_def[self.DEF_KEY_AUTO_INDEX_POSTFIX],
+                index_regex=auto_sub_resources_def[self.DEF_KEY_AUTO_INDEX_REGEX],
                 resource_def_template=auto_sub_resources_def['auto_sub_resources'],
                 csv_row=csv_row)
             for auto_resource_index in unique_auto_resource_indexes:
                 sub_resource_def = OclCsvToJsonConverter.generate_resource_def_from_template(
-                    index_prefix=auto_sub_resources_def['index_prefix'],
-                    index_postfix=auto_sub_resources_def['index_postfix'],
+                    index_prefix=auto_sub_resources_def[self.DEF_KEY_AUTO_INDEX_PREFIX],
+                    index_postfix=auto_sub_resources_def[self.DEF_KEY_AUTO_INDEX_POSTFIX],
                     auto_resource_index=auto_resource_index,
                     resource_def_template=auto_sub_resources_def['auto_sub_resources'])
                 sub_resource = self.process_resource_def(csv_row, sub_resource_def)
@@ -631,6 +637,7 @@ class OclCsvToJsonConverter(object):
             if not isinstance(field_def['column'], list):
                 columns = [columns]
             skip_empty_value = True
+
             if 'skip_empty_value' in field_def:
                 skip_empty_value = bool(skip_empty_value)
             for column in columns:
@@ -651,12 +658,11 @@ class OclCsvToJsonConverter(object):
 
             # Return None if no value found and not required
             return None
-
         elif 'value' in field_def:
             # Just return whatever is in the 'value' definition
             return field_def['value']
-        elif 'csv_to_json_processor' in field_def and 'data_column' in field_def:
-            # Use an externally defined method to generate the value
+        elif 'csv_to_json_processor' in field_def and field_def['csv_to_json_processor']:
+            # Use a custom method to generate the value
             method_to_call = getattr(self, field_def['csv_to_json_processor'])
             return method_to_call(csv_row, field_def)
         else:
@@ -677,8 +683,20 @@ class OclCsvToJsonConverter(object):
             return float(value)
         return value
 
+    def process_auto_concept_reference(self, csv_row, field_def):
+        """ Returns a concept reference expression, e.g. {'expressions': [<concept_url>]} """
+        # TODO: the concept url variables are not stored in the field_def or csv_row, they're evaluated
+        concept_url = OclCsvToJsonConverter.get_concept_url(
+            owner_id=field_def.pop('ref_target_owner'),
+            owner_type=field_def.pop('ref_target_owner_type'),
+            source=field_def.pop('ref_target_source'),
+            concept_id=field_def.pop('ref_target_concept_id'))
+        if concept_url:
+            return {'expressions': [concept_url]}
+        return None
+
     def process_reference(self, csv_row, field_def):
-        """ Processes a reference in the CSV row """
+        """ (DEPRECATED) Processes a reference in the CSV row """
         result = None
         if ('data_column' in field_def and field_def['data_column'] and
                 field_def['data_column'] in csv_row):
@@ -714,6 +732,11 @@ class OclCsvToJsonConverter(object):
 class OclStandardCsvToJsonConverter(OclCsvToJsonConverter):
     """ Standard CSV to OCL-formatted JSON converter """
 
+    # Standard auto index constants
+    AUTO_INDEX_STANDARD_PREFIX = '['
+    AUTO_INDEX_STANDARD_POSTFIX = ']'
+    AUTO_INDEX_STANDARD_REGEX = '[a-zA-Z0-9\\-_]+'
+
     default_csv_resource_definitions = [
         {
             'definition_name': 'Generic Organization',
@@ -735,9 +758,9 @@ class OclStandardCsvToJsonConverter(OclCsvToJsonConverter):
                 'separator': ':',
                 'key_column_prefix': 'attr_key',  # 2-digit number required, e.g. attr_key[01]
                 'value_column_prefix': 'attr_value',  # 2-digit number required, e.g. attr_value[01]
-                'index_prefix': '[',
-                'index_postfix': ']',
-                'index_regex': '[a-zA-Z0-9\\-_]+',
+                'index_prefix': AUTO_INDEX_STANDARD_PREFIX,
+                'index_postfix': AUTO_INDEX_STANDARD_POSTFIX,
+                'index_regex': AUTO_INDEX_STANDARD_REGEX,
             }
         },
         {
@@ -771,9 +794,9 @@ class OclStandardCsvToJsonConverter(OclCsvToJsonConverter):
                 'separator': ':',
                 'key_column_prefix': 'attr_key',  # 2-digit number required, e.g. attr_key[01]
                 'value_column_prefix': 'attr_value',  # 2-digit number required, e.g. attr_value[01]
-                'index_prefix': '[',
-                'index_postfix': ']',
-                'index_regex': '[a-zA-Z0-9\\-_]+',
+                'index_prefix': AUTO_INDEX_STANDARD_PREFIX,
+                'index_postfix': AUTO_INDEX_STANDARD_POSTFIX,
+                'index_regex': AUTO_INDEX_STANDARD_REGEX,
             }
         },
         {
@@ -808,9 +831,9 @@ class OclStandardCsvToJsonConverter(OclCsvToJsonConverter):
                 'separator': ':',
                 'key_column_prefix': 'attr_key',  # 2-digit number required, e.g. attr_key[01]
                 'value_column_prefix': 'attr_value',  # 2-digit number required, e.g. attr_value[01]
-                'index_prefix': '[',
-                'index_postfix': ']',
-                'index_regex': '[a-zA-Z0-9\\-_]+',
+                'index_prefix': AUTO_INDEX_STANDARD_PREFIX,
+                'index_postfix': AUTO_INDEX_STANDARD_POSTFIX,
+                'index_regex': AUTO_INDEX_STANDARD_REGEX,
             }
         },
         {
@@ -844,9 +867,9 @@ class OclStandardCsvToJsonConverter(OclCsvToJsonConverter):
                     {'resource_field': 'external_id', 'column': 'name_external_id',
                      'required': False},
                 ],
-                'index_prefix': '[',
-                'index_postfix': ']',
-                'index_regex': '[a-zA-Z0-9\\-_]+',
+                'index_prefix': AUTO_INDEX_STANDARD_PREFIX,
+                'index_postfix': AUTO_INDEX_STANDARD_POSTFIX,
+                'index_regex': AUTO_INDEX_STANDARD_REGEX,
                 'auto_sub_resources': [
                     {'resource_field': 'name', 'column_prefix': 'name'},
                     {'resource_field': 'locale', 'column_prefix': 'name_locale', 'default': 'en'},
@@ -871,9 +894,9 @@ class OclStandardCsvToJsonConverter(OclCsvToJsonConverter):
                     {'resource_field': 'external_id', 'column': 'description_external_id',
                      'required': False},
                 ],
-                'index_prefix': '[',
-                'index_postfix': ']',
-                'index_regex': '[a-zA-Z0-9\\-_]+',
+                'index_prefix': AUTO_INDEX_STANDARD_PREFIX,
+                'index_postfix': AUTO_INDEX_STANDARD_POSTFIX,
+                'index_regex': AUTO_INDEX_STANDARD_REGEX,
                 'auto_sub_resources': [
                     {'resource_field': 'description', 'column_prefix': 'description'},
                     {'resource_field': 'locale', 'column_prefix': 'description_locale',
@@ -891,9 +914,9 @@ class OclStandardCsvToJsonConverter(OclCsvToJsonConverter):
                 'separator': ':',
                 'key_column_prefix': 'attr_key',  # 2-digit number required, e.g. attr_key[01]
                 'value_column_prefix': 'attr_value',  # 2-digit number required, e.g. attr_value[01]
-                'index_prefix': '[',
-                'index_postfix': ']',
-                'index_regex': '[a-zA-Z0-9\\-_]+',
+                'index_prefix': AUTO_INDEX_STANDARD_PREFIX,
+                'index_postfix': AUTO_INDEX_STANDARD_POSTFIX,
+                'index_regex': AUTO_INDEX_STANDARD_REGEX,
             }
         },
         {
@@ -905,9 +928,9 @@ class OclStandardCsvToJsonConverter(OclCsvToJsonConverter):
             OclCsvToJsonConverter.DEF_AUTO_RESOURCE_TEMPLATE: {
                 'definition_name': 'Generic Concept Internal Mapping',
                 'resource_type': oclconstants.OclConstants.RESOURCE_TYPE_MAPPING,
-                'index_prefix': '[',
-                'index_postfix': ']',
-                'index_regex': '[a-zA-Z0-9\\-_]+',
+                'index_prefix': AUTO_INDEX_STANDARD_PREFIX,
+                'index_postfix': AUTO_INDEX_STANDARD_POSTFIX,
+                'index_regex': AUTO_INDEX_STANDARD_REGEX,
                 'skip_if_empty_column_prefix': ['map_to_concept_id', 'map_to_concept_url'],
                 OclCsvToJsonConverter.DEF_CORE_FIELDS: [
                     {'resource_field': 'map_target', 'column_prefix': 'map_target',
@@ -956,9 +979,9 @@ class OclStandardCsvToJsonConverter(OclCsvToJsonConverter):
             OclCsvToJsonConverter.DEF_AUTO_RESOURCE_TEMPLATE: {
                 'definition_name': 'Generic Concept External Mapping',
                 'resource_type': oclconstants.OclConstants.RESOURCE_TYPE_MAPPING,
-                'index_prefix': '[',
-                'index_postfix': ']',
-                'index_regex': '[a-zA-Z0-9\\-_]+',
+                'index_prefix': AUTO_INDEX_STANDARD_PREFIX,
+                'index_postfix': AUTO_INDEX_STANDARD_POSTFIX,
+                'index_regex': AUTO_INDEX_STANDARD_REGEX,
                 'skip_if_empty_column_prefix': ['extmap_to_concept_id', 'extmap_to_concept_url'],
                 OclCsvToJsonConverter.DEF_CORE_FIELDS: [
                     {'resource_field': 'map_target', 'column_prefix': 'extmap_target',
@@ -998,6 +1021,41 @@ class OclStandardCsvToJsonConverter(OclCsvToJsonConverter):
                      'column': 'source'},
                 ],
             },
+        },
+        {
+            'definition_name': 'Generic Auto Concept Reference',
+            'is_active': False,
+            'resource_type': OclCsvToJsonConverter.DEF_TYPE_AUTO_RESOURCE,
+            '__trigger_column': 'resource_type',
+            '__trigger_value': oclconstants.OclConstants.RESOURCE_TYPE_CONCEPT,
+            OclCsvToJsonConverter.DEF_AUTO_RESOURCE_TEMPLATE: {
+                'definition_name': 'Generic Concept Reference',
+                'resource_type': oclconstants.OclConstants.RESOURCE_TYPE_REFERENCE,
+                'index_prefix': AUTO_INDEX_STANDARD_PREFIX,
+                'index_postfix': AUTO_INDEX_STANDARD_POSTFIX,
+                'index_regex': AUTO_INDEX_STANDARD_REGEX,
+                'skip_if_empty_column_prefix': ['ref_collection'],
+                OclCsvToJsonConverter.DEF_CORE_FIELDS: [
+                    {'resource_field': 'owner', 'column_prefix': 'ref_owner_id',
+                     'column': 'owner_id'},
+                    {'resource_field': 'owner_type', 'column_prefix': 'ref_owner_type',
+                     'column': 'owner_type',
+                     'default': oclconstants.OclConstants.RESOURCE_TYPE_ORGANIZATION},
+                    {'resource_field': 'collection', 'column_prefix': 'ref_collection'},
+                    {'resource_field': 'ref_type', 'column_name': 'ref_type',
+                     'default': oclconstants.OclConstants.RESOURCE_TYPE_CONCEPT},
+                    {'resource_field': 'ref_target_owner_id',
+                     'column_prefix': 'ref_target_owner_id', 'column': 'owner_id'},
+                    {'resource_field': 'ref_target_owner_type',
+                     'column_prefix': 'ref_target_owner_type', 'column': 'owner_type',
+                     'default': oclconstants.OclConstants.RESOURCE_TYPE_ORGANIZATION},
+                    {'resource_field': 'ref_target_source', 'column_prefix': 'ref_target_source',
+                     'column': 'source'},
+                    {'resource_field': 'ref_target_concept_id', 'column': 'id'},
+                    {'resource_field': 'data',
+                     'csv_to_json_processor': 'process_auto_concept_reference'},
+                ]
+            }
         },
         {
             'definition_name': 'Generic Standalone Internal Mapping',
@@ -1080,6 +1138,16 @@ class OclStandardCsvToJsonConverter(OclCsvToJsonConverter):
                  'default': oclconstants.OclConstants.RESOURCE_TYPE_ORGANIZATION},
                 {'resource_field': 'source', 'column': ['map_source', 'source']},
             ]
+        },
+        {
+            'definition_name': 'Generic Collection Reference',
+            'is_active': False,
+            'resource_type': oclconstants.OclConstants.RESOURCE_TYPE_REFERENCE,
+            'id_column': 'id',
+            '__trigger_column': 'resource_type',
+            '__trigger_value': oclconstants.OclConstants.RESOURCE_TYPE_REFERENCE,
+            'skip_if_empty_column': 'id',
+
         },
         {
             'definition_name': 'Generic Source Version',
