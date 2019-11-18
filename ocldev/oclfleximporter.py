@@ -348,6 +348,13 @@ class OclBulkImporter(object):
     OCL_BULK_IMPORT_MAX_WAIT_SECONDS = 120 * 60
     OCL_BULK_IMPORT_MINIMUM_DELAY_SECONDS = 5
 
+    OCL_BULK_IMPORT_STATUS_PENDING = 'PENDING'
+    OCL_BULK_IMPORT_STATUS_STARTED = 'STARTED'
+    OCL_BULK_IMPORT_STATUSES = [
+        OCL_BULK_IMPORT_STATUS_PENDING,
+        OCL_BULK_IMPORT_STATUS_STARTED,
+    ]
+
     @staticmethod
     def post(file_path='', input_list=None, api_url_root='', api_token=''):
         """
@@ -375,10 +382,10 @@ class OclBulkImporter(object):
         url = api_url_root + OclBulkImporter.OCL_BULK_IMPORT_API_ENDPOINT
         api_headers = {'Authorization': 'Token ' + api_token}
         import_request = requests.post(url, headers=api_headers, data=post_data)
-        #import_request.raise_for_status()
-        #import_response = import_request.json()
-        #self.task_id = import_response['task']
-        #return self.task_id
+        # import_request.raise_for_status()
+        # import_response = import_request.json()
+        # self.task_id = import_response['task']
+        # return self.task_id
         return import_request
 
     @staticmethod
@@ -399,7 +406,7 @@ class OclBulkImporter(object):
         delay_seconds = max(OclBulkImporter.OCL_BULK_IMPORT_MINIMUM_DELAY_SECONDS, delay_seconds)
         start_time = time.time()
         url = api_url_root + OclBulkImporter.OCL_BULK_IMPORT_API_ENDPOINT
-        url_params = {'task':task_id, 'result':'json'}
+        url_params = {'task': task_id, 'result': 'json'}
         api_headers = {'Authorization': 'Token ' + api_token}
 
         # Do the initial request and return if successful and import is complete
@@ -407,21 +414,22 @@ class OclBulkImporter(object):
         import_results_response.raise_for_status()
         results_json = import_results_response.json()
         if 'state' not in results_json or (
-                'state' in results_json and results_json['state'] != 'PENDING'):
+                'state' in results_json and results_json['state'] not in OclBulkImporter.OCL_BULK_IMPORT_STATUSES):
             return OclImportResults.load_from_json(results_json)
 
         # Import results were not ready, so start looping
         while time.time() - start_time + delay_seconds < max_wait_seconds:
-            #print 'Delaying %s seconds...' % str(delay_seconds)
+            # print 'Delaying %s seconds...' % str(delay_seconds)
             time.sleep(delay_seconds)
             import_results_response = requests.get(url, params=url_params, headers=api_headers)
             import_results_response.raise_for_status()
             results_json = import_results_response.json()
             if 'state' not in results_json or (
-                    'state' in results_json and results_json['state'] != 'PENDING'):
+                    'state' in results_json and results_json['state'] not in OclBulkImporter.OCL_BULK_IMPORT_STATUSES):
                 return OclImportResults.load_from_json(results_json)
 
         return None
+
 
 class OclFlexImporter(object):
     """
@@ -780,7 +788,8 @@ class OclFlexImporter(object):
         if self.obj_def[obj_type]["has_owner"]:
             has_owner = True
         if self.obj_def[obj_type]["has_source"] and self.obj_def[obj_type]["has_collection"]:
-            err_msg = "Object definition for '%s' must not have both 'has_source' and 'has_collection' set to True" % obj_type
+            err_msg = "Object definition for '%s' must not have both " % obj_type
+            err_msg += "'has_source' and 'has_collection' set to True"
             raise InvalidObjectDefinition(obj, err_msg)
         elif self.obj_def[obj_type]["has_source"]:
             has_source = True
@@ -801,7 +810,8 @@ class OclFlexImporter(object):
                 obj_owner = obj.pop("owner")
                 if obj_owner_type == oclconstants.OclConstants.RESOURCE_TYPE_ORGANIZATION:
                     obj_owner_url = "/%s/%s/" % (
-                        self.obj_def[oclconstants.OclConstants.RESOURCE_TYPE_ORGANIZATION]["url_name"],
+                        self.obj_def[
+                            oclconstants.OclConstants.RESOURCE_TYPE_ORGANIZATION]["url_name"],
                         obj_owner)
                 elif obj_owner_type == oclconstants.OclConstants.RESOURCE_TYPE_USER:
                     obj_owner_url = "/%s/%s/" % (
@@ -847,7 +857,8 @@ class OclFlexImporter(object):
         # Build object URLs -- note that these always end with forward slashes
         obj_url = new_obj_url = ''
         if has_source or has_collection:
-            if 'omit_resource_name_on_get' in self.obj_def[obj_type] and self.obj_def[obj_type]['omit_resource_name_on_get']:
+            if 'omit_resource_name_on_get' in self.obj_def[
+                    obj_type] and self.obj_def[obj_type]['omit_resource_name_on_get']:
                 # Source or collection version does not use 'versions' in endpoint
                 new_obj_url = obj_repo_url + self.obj_def[obj_type]["url_name"] + "/"
                 obj_url = obj_repo_url + obj_id + "/"
@@ -990,7 +1001,6 @@ class OclFlexImporter(object):
         """ Posts an object to the OCL API as either an update or create """
 
         # Determine which URL to use based on whether or not object already exists
-        action_type = None
         if obj_already_exists:
             method = self.obj_def[obj_type]['update_method']
             url = obj_url
