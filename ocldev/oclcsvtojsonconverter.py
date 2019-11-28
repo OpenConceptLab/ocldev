@@ -98,6 +98,13 @@ class OclCsvToJsonConverter(object):
                 input_list.append(row)
         self.input_list = input_list
 
+    def process(self, method=PROCESS_BY_DEFINITION, num_rows=0, attr=None):
+        """ Process CSV into OCL-formatted JSON """
+        if method == OclCsvToJsonConverter.PROCESS_BY_ROW:
+            return self.process_by_row(num_rows=num_rows, attr=attr)
+        else:
+            return self.process_by_definition(num_rows=num_rows, attr=attr)
+
     def process_by_row(self, num_rows=0, attr=None):
         """ Process CSV by applying all definitions to each row before moving to the next row """
         if self.csv_filename:
