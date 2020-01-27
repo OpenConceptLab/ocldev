@@ -24,15 +24,14 @@ class OclExportFactory(object):
     """ Factory class to create OclExport factory objects """
 
     @staticmethod
-    def load_export(repo_version_url='', oclapitoken='',
-                    compressed_pathname='ocl_temp_repo_export.zip'):
+    def load_export(repo_version_url='', oclapitoken=''):
         """
         Retrieve a cached repository export from OCL, decompress, parse the JSON, and return as a python dictionary.
         NOTE: The export is decompressed and parsed in memory. It may be necessary in the future to handle very large
         exports using the filesystem rather than processing in memory.
         """
 
-        # Prepare the headers
+        # Prepare the request headers
         oclapiheaders = {'Content-Type': 'application/json'}
         if oclapitoken:
             oclapiheaders['Authorization'] = 'Token ' + oclapitoken
@@ -41,20 +40,6 @@ class OclExportFactory(object):
         repo_export_url = '%sexport/' % (repo_version_url)
         r = requests.get(repo_export_url, allow_redirects=True, headers=oclapiheaders)
         r.raise_for_status()
-
-        """JP 2019-08-29: Replaced with code to decompress the zip file in memory
-        # Write the zipped export to disk
-        open(compressed_pathname, 'wb').write(r.content)
-
-        # Unzip the export
-        zip_ref = zipfile.ZipFile(compressed_pathname, 'r')
-        zip_ref.extractall()
-        zip_ref.close()
-
-        # Load the export and return
-        json_filename = 'export.json'
-        return OclExportFactory.load_from_export_json_file(json_filename)
-        """
 
         # Decompress "export.json" from the zipfile in memory and return as a python dictionary
         repo_export = None
@@ -72,24 +57,37 @@ class OclExportFactory(object):
         return OclExport(repo_export)
 
     @staticmethod
-    def load_latest_export(repo_url):
-        repo_id = OclExportFactory.get_latest_version_id(repo_url)
+    def load_latest_export(repo_url, oclapitoken=''):
+        """
+        Load latest export of the specified repository. Repo URL should be of the format:
+        https://api.openconceptlab.org/orgs/MyOrg/sources/MySource/
+        """
+        repo_id = OclExportFactory.get_latest_version_id(repo_url, oclapitoken=oclapitoken)
         if repo_id:
             repo_version_url = '%s%s/' % (repo_url, repo_id)
-            return OclExportFactory.load_export(repo_version_url)
+            return OclExportFactory.load_export(repo_version_url, oclapitoken=oclapitoken)
         else:
             return None
 
     @staticmethod
-    def get_latest_version_id(repo_url):
+    def get_latest_version_id(repo_url, oclapitoken=''):
+        """
+        Get the ID of the most recent released version of the specified repository
+        """
+
+        # Prepare the request headers
+        oclapiheaders = {'Content-Type': 'application/json'}
+        if oclapitoken:
+            oclapiheaders['Authorization'] = 'Token ' + oclapitoken
+
         # Get the latest version ID
-        repo_latest_url = '%slatest/' % (repo_url)
-        r = requests.get(repo_latest_url)
+        repo_latest_url = '%slatest/' % repo_url
+        r = requests.get(repo_latest_url, headers=oclapiheaders)
         repo_version = r.json()
         if repo_version and 'id' in repo_version:
             return repo_version['id']
         else:
-            raise OclUnknownResourceError(repo_url, 'Repository "%s" does not exist' % (repo_url))
+            raise OclUnknownResourceError(repo_url, 'Repository "%s" does not exist' % repo_url)
 
     @staticmethod
     def load_from_export_json_file(filename):
