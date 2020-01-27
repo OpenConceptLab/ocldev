@@ -198,6 +198,10 @@ class OclImportResults(object):
         """ Get a concise summary of this results object """
         return self.get_summary()
 
+    def get_logging_keys(self):
+        """ Returns list of logging keys stored in the results object """
+        return self._results.keys()
+
     def get_import_results(self, results_mode='summary'):
         """
         Single method to fetch import results in one of the supported formats
@@ -231,14 +235,16 @@ class OclImportResults(object):
         return ''
 
     def get_detailed_summary(self, root_key=None, limit_to_success_codes=False):
-        """ Get a detailed summary of the results """
+        """ Get a detailed summary of the results, optionally filtering by a specific root_key """
 
-        # Build results summary dictionary - organized by action type instead of root
-        results_summary = {}
+        # Apply root_key filter or use all keys if no filter specified
         if root_key:
             keys = [root_key]
         else:
             keys = self._results.keys()
+
+        # Build results summary dictionary - organized by action type instead of root
+        results_summary = {}
         total_count = 0
         for k in keys:
             for action_type in self._results[k]:
@@ -271,7 +277,7 @@ class OclImportResults(object):
 
         # Polish it all off
         if limit_to_success_codes:
-            process_str = 'Successfully processed'
+            process_str = 'Successfully Processed'
         else:
             process_str = 'Processed'
         if root_key:
@@ -283,17 +289,26 @@ class OclImportResults(object):
         return output
 
     def display_report(self):
-        """ Display a full report of the results """
-        output = 'REPORT OF IMPORT RESULTS:\n'
-        for logging_root in self._results:
-            output += '%s:\n' % logging_root
-            for action_type in self._results[logging_root]:
-                for status_code in self._results[logging_root][action_type]:
+        """ Display a full report of the results, optionally filtering by a specific root_key """
+
+        # Apply root_key filter or use all keys if no filter specified
+        if root_key:
+            logging_keys = [root_key]
+            output = 'REPORT OF IMPORT RESULTS FOR KEY "%s":' % root_key
+        else:
+            logging_keys = self._results.keys()
+            output = 'REPORT OF IMPORT RESULTS:\n'
+
+        # Iterate through logging keys and prepare report
+        for logging_key in logging_keys:
+            output += '%s:\n' % logging_key
+            for action_type in self._results[logging_key]:
+                for status_code in self._results[logging_key][action_type]:
                     if action_type == status_code == self.SKIP_KEY:
                         output += '  %s:\n' % (self.SKIP_KEY)
                     else:
                         output += '  %s %s:\n' % (action_type, status_code)
-                    for result in self._results[logging_root][action_type][status_code]:
+                    for result in self._results[logging_key][action_type][status_code]:
                         output += '    %s  %s\n' % (result['message'], result['text'])
 
         return output
@@ -328,7 +343,7 @@ class OclImportResults(object):
             results_obj.elapsed_seconds = json_results.get('elapsed_seconds', 0)
             return results_obj
         else:
-            raise TypeError('Expected string or dict. "%s" received.' % type(json_results))
+            raise TypeError('Expected string or dict. "%s" received.' % str(type(json_results)))
 
 
 class OclBulkImporter(object):
@@ -356,18 +371,19 @@ class OclBulkImporter(object):
     ]
 
     @staticmethod
-    def post(file_path='', input_list=None, api_url_root='', api_token=''):
+    def post(file_path='', input_list=None, api_url_root='', api_token='', test_mode=False):
         """
         Post the import to the OCL bulk import API endpoint and return the request object
         :param file_path: Full path to a file to import
         :param input_list: Python list of JSON dictionaries to import
         :param api_url_root: e.g. https://api.openconceptlab.org
         :param api_token: OCL API token for the user account that will run the import
+        :param test_mode: Set to True to simulate the import
         """
 
         # TODO: Switch to returning a custom OclBulkImportResponse object
 
-        # Prep the import JSON
+        # Prepare the import JSON
         if input_list:
             # change to a string with line separators
             post_data = ''
@@ -396,8 +412,9 @@ class OclBulkImporter(object):
         submit to OCL as identified by a task_id.
         If the import is still being processed, the method will continue to try after
         delay_seconds (default is 15 seconds) until the time elapsed is greater than
-        max_wait_seconds. delay_seconds must be greater than or equal to 5 seconds. Set
-        max_wait_seconds to zero (the default) to only request results once. max_wait_seconds
+        max_wait_seconds. delay_seconds must be greater than or equal to 
+        OclBulkImporter.OCL_BULK_IMPORT_MINIMUM_DELAY_SECONDS seconds. Set max_wait_seconds
+        to zero (the default) to only request results once. max_wait_seconds
         must be less than OclBulkImporter.OCL_BULK_IMPORT_MAX_WAIT_SECONDS.
         """
 
@@ -543,7 +560,7 @@ class OclFlexImporter(object):
             "omit_resource_name_on_get": True,
             "allowed_fields": ["id", "external_id", "description", "released"],
             "create_method": "POST",
-            "update_method": "POST",
+            "update_method": "PUT",
         },
         oclconstants.OclConstants.RESOURCE_TYPE_USER: {
             "id_field": "username",
