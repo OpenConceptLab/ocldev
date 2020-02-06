@@ -5,10 +5,10 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name='ocldev',
-    version='0.1.30',
+    version='0.1.32',
     author='Open Concept Lab',
     author_email='info@openconceptlab.org',
-    description='Development library for working with OCL resources and APIs',
+    description='Python development library for working with OCL resources and APIs',
     long_description=long_description,
     long_description_content_type='text/markdown',
     url='http://github.com/OpenConceptLab/ocldev',

@@ -1,11 +1,10 @@
 """
 Objects to work with OCL's export API
 """
-import requests
 import json
 import zipfile
-from pprint import pprint
 from StringIO import StringIO
+import requests
 
 
 class OclError(Exception):
@@ -26,9 +25,10 @@ class OclExportFactory(object):
     @staticmethod
     def load_export(repo_version_url='', oclapitoken=''):
         """
-        Retrieve a cached repository export from OCL, decompress, parse the JSON, and return as a python dictionary.
-        NOTE: The export is decompressed and parsed in memory. It may be necessary in the future to handle very large
-        exports using the filesystem rather than processing in memory.
+        Retrieve a cached repository export from OCL, decompress, parse the JSON, and
+        return as a python dictionary. NOTE: The export is decompressed and parsed in
+        memory. It may be necessary in the future to handle very large exports using
+        the filesystem rather than processing in memory.
         """
 
         # Prepare the request headers
@@ -37,7 +37,7 @@ class OclExportFactory(object):
             oclapiheaders['Authorization'] = 'Token ' + oclapitoken
 
         # Fetch the zipped export from OCL
-        repo_export_url = '%sexport/' % (repo_version_url)
+        repo_export_url = '%sexport/' % repo_version_url
         r = requests.get(repo_export_url, allow_redirects=True, headers=oclapiheaders)
         r.raise_for_status()
 
@@ -51,8 +51,7 @@ class OclExportFactory(object):
         else:
             zipref.close()
             errmsg = 'ERROR: Invalid repository export for "%s": export.json not found in the export response.\n%s' % (
-                original_export_url, r.content)
-            self.vlog(1, errmsg)
+                repo_version_url, r.content)
             raise Exception(errmsg)
         return OclExport(repo_export)
 
@@ -66,8 +65,7 @@ class OclExportFactory(object):
         if repo_id:
             repo_version_url = '%s%s/' % (repo_url, repo_id)
             return OclExportFactory.load_export(repo_version_url, oclapitoken=oclapitoken)
-        else:
-            return None
+        return None
 
     @staticmethod
     def get_latest_version_id(repo_url, oclapitoken=''):
@@ -91,60 +89,99 @@ class OclExportFactory(object):
 
     @staticmethod
     def load_from_export_json_file(filename):
+        """ Load previously saved export from a file """
         with open(filename) as input_file:
             export_json = json.loads(input_file.read())
             return OclExport(export_json)
 
 
 class OclExport(object):
-    """ Object to represent an OCL export """
+    """ Object representing an OCL export of an source or collection version """
 
     def __init__(self, export_json=None, ocl_export=None):
+        """ Initialize this OclExport object """
+        self._export_json = None
+        self._concepts = []
+        self._mappings = []
         self.set_export(export_json=export_json, ocl_export=ocl_export)
 
+    def get_full_export(self):
+        """ Return full contents of export as a python dictionary """
+        return self._export_json
+
     def set_export(self, export_json=None, ocl_export=None):
+        """
+        Set the contents of this export object to the passed OCL export JSON or another
+        OclExport object.
+        """
         if export_json and ocl_export:
             raise Exception('uhoh')
         elif export_json:
-            self._export = export_json
-            self._concepts = {}
-            self._mappings = []
+            self._export_json = export_json
         elif ocl_export:
             if not isinstance(ocl_export, OclExport):
                 raise Exception('oh no!')
-            self._export = ocl_export._export
-            self._concepts = ocl_export._concepts
-            self._mappings = ocl_export._mappings
-        return None
-
-        for concept in self._export['concepts']:
-            self._concepts[concept['id']] = concept
-        self._mappings = self._export['mappings']
+            self._export_json = ocl_export.get_full_export()
+        self._concepts = self._export_json['concepts']
+        self._mappings = self._export_json['mappings']
 
     def get_concept_by_id(self, concept_id):
-        if concept_id in self._concepts:
-            return self._concepts[concept_id]
-        return None
-
-    def get_concept_by_uri(self, concept_uri):
+        """ Returns the first concept that matches the specified ID, otherwise returns None """
         for concept in self._concepts:
-            if concept['url'] == concept_url:
+            if concept['id'] == concept_id:
                 return concept
         return None
 
-    def get_concepts(self, concept_class='', datatype='', concept_id='', concept_uri=''):
+    def get_concept_by_uri(self, concept_uri):
+        """ Returns the first concept that matches the specified URL, otherwise returns None """
+        for concept in self._concepts:
+            if concept['url'] == concept_uri:
+                return concept
+        return None
+
+    def get_concepts(self, concept_id='', concept_uri='', concept_class='', datatype='',
+                     core_attrs=None, custom_attrs=None):
+        """
+        Get list of concepts matching all of the specified attributes. While concept ID, URI,
+        class, and may be explicitly passed as arguments, any core or custom attribute may be
+        passed using the core_attrs and custom_attrs dictionaries.
+        """
+
+        # Move explicit filters into the core attributes dictionary
+        if not core_attrs:
+            core_attrs = {}
+        if concept_id:
+            core_attrs['concept_id'] = concept_id
+        if concept_uri:
+            core_attrs['url'] = concept_id
+        if concept_class:
+            core_attrs['concept_class'] = concept_id
+        if datatype:
+            core_attrs['datatype'] = concept_id
+
+        # Return matching concepts
         concepts = []
-        for concept in self._export['concepts']:
-            if (concept_id == concept['id'] or not concept_id) and \
-                (concept_class == concept['concept_class'] or not concept_class) and \
-                (datatype == concept['datatype'] or not datatype) and \
-                (concept_uri == concept['url'] or not concept_uri):
+        for concept in self._concepts:
+            is_match = True
+            if core_attrs:
+                for core_attr_key in core_attrs:
+                    if core_attr_key not in concept or concept[core_attr_key] != core_attrs[core_attr_key]:
+                        is_match = False
+                        break
+            if custom_attrs and is_match:
+                for custom_attr_key in custom_attrs:
+                    if 'extras' not in concept or not concept['extras'] or custom_attr_key not in concept['extras'] or concept['extras'][custom_attr_key] != custom_attrs[custom_attr_key]:
+                        is_match = False
+                        break
+            if is_match:
                 concepts.append(concept)
+
         return concepts
 
     def get_mappings(self, from_concept_uri='', to_concept_uri='', map_type=''):
+        """ Get list of mappings in the export matching the specified search criteria """
         mappings = []
-        for mapping in self._export['mappings']:
+        for mapping in self._export_json['mappings']:
             if (mapping['from_concept_url'] == from_concept_uri or not from_concept_uri) and \
                 (mapping['to_concept_url'] == to_concept_uri or not to_concept_uri) and \
                 (mapping['map_type'] == map_type or not map_type):
