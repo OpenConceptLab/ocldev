@@ -288,7 +288,7 @@ class OclImportResults(object):
 
         return output
 
-    def display_report(self):
+    def display_report(self, root_key=''):
         """ Display a full report of the results, optionally filtering by a specific root_key """
 
         # Apply root_key filter or use all keys if no filter specified
@@ -411,7 +411,7 @@ class OclBulkImporter(object):
         submit to OCL as identified by a task_id.
         If the import is still being processed, the method will continue to try after
         delay_seconds (default is 15 seconds) until the time elapsed is greater than
-        max_wait_seconds. delay_seconds must be greater than or equal to 
+        max_wait_seconds. delay_seconds must be greater than or equal to
         OclBulkImporter.OCL_BULK_IMPORT_MINIMUM_DELAY_SECONDS seconds. Set max_wait_seconds
         to zero (the default) to only request results once. max_wait_seconds
         must be less than OclBulkImporter.OCL_BULK_IMPORT_MAX_WAIT_SECONDS.
@@ -430,7 +430,8 @@ class OclBulkImporter(object):
         import_results_response.raise_for_status()
         results_json = import_results_response.json()
         if 'state' not in results_json or (
-                'state' in results_json and results_json['state'] not in OclBulkImporter.OCL_BULK_IMPORT_STATUSES):
+                'state' in results_json and
+                results_json['state'] not in OclBulkImporter.OCL_BULK_IMPORT_STATUSES):
             return OclImportResults.load_from_json(results_json)
 
         # Import results were not ready, so start looping
@@ -441,7 +442,8 @@ class OclBulkImporter(object):
             import_results_response.raise_for_status()
             results_json = import_results_response.json()
             if 'state' not in results_json or (
-                    'state' in results_json and results_json['state'] not in OclBulkImporter.OCL_BULK_IMPORT_STATUSES):
+                    'state' in results_json and
+                    results_json['state'] not in OclBulkImporter.OCL_BULK_IMPORT_STATUSES):
                 return OclImportResults.load_from_json(results_json)
 
         return None

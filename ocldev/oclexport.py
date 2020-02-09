@@ -50,8 +50,8 @@ class OclExportFactory(object):
             zipref.close()
         else:
             zipref.close()
-            errmsg = 'ERROR: Invalid repository export for "%s": export.json not found in the export response.\n%s' % (
-                repo_version_url, r.content)
+            errmsg = 'ERROR: Invalid repository export for "%s": ' % repo_version_url
+            errmsg += 'export.json not found in the export response.\n%s' % r.content
             raise Exception(errmsg)
         return OclExport(repo_export)
 
