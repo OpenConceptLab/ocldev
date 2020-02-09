@@ -313,25 +313,24 @@ class OclImportResults(object):
 
         return output
 
-    def to_json(self):
-        """
-        Return serialized JSON of the results object.
-        Designed to be used with the load_from_json method
-        """
-        return json.dumps({
-            'results': self._results,
+    def get_stats(self):
+        """ Returns dict of stats about the import results """
+        return {
             'count': self.count,
             'num_skipped': self.num_skipped,
             'total_lines': self.total_lines,
             'elapsed_seconds': self.elapsed_seconds,
-        })
+        }
+
+    def to_json(self):
+        """ Return serialized JSON of the results object. Works with the load_from_json method """
+        return_obj = self.get_stats()
+        return_obj['results'] = self._results
+        return json.dumps(return_obj)
 
     @staticmethod
     def load_from_json(json_results):
-        """
-        Load serialized JSON results into this object.
-        Designed to be used with the to_json method
-        """
+        """ Load serialized JSON results into this object. Works with the to_json method """
         if isinstance(json_results, basestring):
             json_results = json.loads(json_results)
         if isinstance(json_results, dict):
