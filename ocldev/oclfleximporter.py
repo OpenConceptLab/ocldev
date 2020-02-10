@@ -202,7 +202,7 @@ class OclImportResults(object):
         """ Returns list of logging keys stored in the results object """
         return self._results.keys()
 
-    def get_import_results(self, results_mode='summary'):
+    def get_import_results(self, results_mode='summary', root_key=None):
         """
         Single method to fetch import results in one of the supported formats
         in OclImportResults.OCL_IMPORT_RESULTS_MODES
@@ -211,9 +211,9 @@ class OclImportResults(object):
         if results_mode not in OclImportResults.OCL_IMPORT_RESULTS_MODES:
             results_mode = OclImportResults.OCL_IMPORT_RESULTS_MODE_DEFAULT
         if results_mode == OclImportResults.OCL_IMPORT_RESULTS_MODE_SUMMARY:
-            return self.get_detailed_summary()
+            return self.get_detailed_summary(root_key=root_key)
         elif results_mode == OclImportResults.OCL_IMPORT_RESULTS_MODE_REPORT:
-            return self.display_report()
+            return self.display_report(root_key=root_key)
         elif results_mode == OclImportResults.OCL_IMPORT_RESULTS_MODE_JSON:
             return self.to_json()
         return None
@@ -288,7 +288,7 @@ class OclImportResults(object):
 
         return output
 
-    def display_report(self, root_key=''):
+    def display_report(self, root_key=None):
         """ Display a full report of the results, optionally filtering by a specific root_key """
 
         # Apply root_key filter or use all keys if no filter specified
