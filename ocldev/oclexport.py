@@ -187,3 +187,57 @@ class OclExport(object):
                 (mapping['map_type'] == map_type or not map_type):
                 mappings.append(mapping)
         return mappings
+
+    def get_stats(self):
+        """ Get dictionary of the counts of the types of concepts and mappings in the export """
+
+        # Setup the stats dictionary and define for which fields counts are generated
+        concept_stat_fields = ['source', 'concept_class', 'datatype']
+        mapping_stat_fields = ['source', 'map_type', 'from_source_url', 'to_source_url']
+        stats = {
+            'Concepts': {
+                'Total': len(self._concepts)
+            },
+            'Mappings': {
+                'Subtotal Internal': 0,
+                'Subtotal External': 0,
+                'Total': len(self._mappings)
+            }
+        }
+
+        # Concepts
+        for concept_stat_field in concept_stat_fields:
+            stats['Concepts'][concept_stat_field] = {}
+        for concept in self._concepts:
+            for concept_stat_field in concept_stat_fields:
+                if concept_stat_field not in concept:
+                    continue
+                if not concept[concept_stat_field] in stats['Concepts'][concept_stat_field]:
+                    stats['Concepts'][concept_stat_field][concept[concept_stat_field]] = 0
+                stats['Concepts'][concept_stat_field][concept[concept_stat_field]] += 1
+
+        # Mappings
+        for mapping_stat_field in mapping_stat_fields:
+            stats['Mappings'][mapping_stat_field] = {}
+        for mapping in self._mappings:
+            # Process the stat fields first
+            for mapping_stat_field in mapping_stat_fields:
+                if mapping_stat_field not in mapping:
+                    continue
+                if not mapping[mapping_stat_field] in stats['Mappings'][mapping_stat_field]:
+                    stats['Mappings'][mapping_stat_field][mapping[mapping_stat_field]] = 0
+                stats['Mappings'][mapping_stat_field][mapping[mapping_stat_field]] += 1
+
+            # Check for internal/external status of this mapping
+            is_from_concept_in_export = False
+            is_to_concept_in_export = False
+            if 'from_concept_url' in mapping and self.get_concept_by_uri(mapping['from_concept_url']):
+                is_from_concept_in_export = True
+            if 'to_concept_url' in mapping and self.get_concept_by_uri(mapping['to_concept_url']):
+                is_to_concept_in_export = True
+            if is_from_concept_in_export and is_to_concept_in_export:
+                stats['Mappings']['Subtotal Internal'] += 1
+            else:
+                stats['Mappings']['Subtotal External'] += 1
+
+        return stats
