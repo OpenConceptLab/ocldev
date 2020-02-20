@@ -858,7 +858,7 @@ class OclFlexImporter(object):
                 obj_repo_url = obj.pop("source_url")
                 obj.pop("source", None)
             elif "source" in obj:
-                obj_repo_url = obj_owner_url + 'sources/' + obj.pop("source").id + "/"
+                obj_repo_url = obj_owner_url + 'sources/' + obj.pop("source")["id"] + "/"
             else:
                 raise InvalidRepositoryError(
                     obj, "Valid source information required for object of type '%s'" % obj_type)
@@ -867,7 +867,7 @@ class OclFlexImporter(object):
                 obj_repo_url = obj.pop("collection_url")
                 obj.pop("collection", None)
             elif "collection" in obj:
-                obj_repo_url = obj_owner_url + 'collections/' + obj.pop("collection").id + "/"
+                obj_repo_url = obj_owner_url + 'collections/' + obj.pop("collection")["id"] + "/"
             else:
                 raise InvalidRepositoryError(
                     obj, "Valid collection information required for object of type '%s'" % obj_type)
