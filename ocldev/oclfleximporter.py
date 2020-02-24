@@ -801,8 +801,11 @@ class OclFlexImporter(object):
             expressions_raw[i * batch_size:(i + 1) * batch_size] for i in range(
                 (len(expressions_raw) + batch_size - 1) // batch_size)]
         if len(expressions_chunked) > 1:
-            self.log('INFO: Automatically splitting new reference request with %s expressions into %s batches' % (
-                len(expressions_raw), str(len(expressions_chunked))))
+            message = ('INFO: New reference request with %s expressions automatically '
+                       'split into %s batches of %s expressions or less') % (
+                           str(len(expressions_raw)), str(len(expressions_chunked)),
+                           str(batch_size))
+            self.log(message)
         for chunk in expressions_chunked:
             new_obj = base_obj.copy()
             new_obj['data'] = {'expressions': chunk}
