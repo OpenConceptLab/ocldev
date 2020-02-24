@@ -7,18 +7,8 @@ directly on the OCL server. See oclapi Bulk Importing documentation for more inf
 https://github.com/OpenConceptLab/oclapi/wiki/Bulk-Importing
 
 NOTE: For batch imports of concepts or mappings into a single source, the server-side import
-script offers the highest performance alternative to this module. Note that support for the
+script offers the highest performance alternative to this module. However, support for the
 server-side import will be discontinued as new functionality is added to the bulk import API.
-
-Resources currently supported by the OCL Flex Importer:
-* Organizations
-* Sources
-* Collections
-* Concepts
-* Mappings
-* References
-* Source Versions
-* Collection Versions
 
 Verbosity settings:
 * 0 = show only responses from server
@@ -35,7 +25,6 @@ Deviations from OCL API responses:
     - "supported_locales" response is a list in OCL, but a comma-separated string
       is in this script instead
 """
-
 import json
 import sys
 import time
@@ -123,8 +112,6 @@ class OclImportResults(object):
         :param status_code:
         :return:
         """
-
-        # TODO: Handle logging for refs differently since they are batched and return 200
 
         # Determine the first dimension (the "logging root") of the results object
         logging_root = '/'
@@ -380,8 +367,6 @@ class OclBulkImporter(object):
         :param test_mode: Set to True to simulate the import
         """
 
-        # TODO: Switch to returning a custom OclBulkImportResponse object
-
         # Prepare the import JSON
         if input_list:
             # change to a string with line separators
@@ -454,6 +439,9 @@ class OclFlexImporter(object):
     Class to flexibly import multiple resource types into OCL from JSON lines files via
     the OCL API rather than the batch importer.
     """
+
+    # Default reference batch size
+    DEFAULT_REFERENCE_BATCH_SIZE = 25
 
     # Constants for import action types
     ACTION_TYPE_NEW = 'new'
@@ -576,8 +564,10 @@ class OclFlexImporter(object):
         }
     }
 
+
     def __init__(self, file_path='', input_list=None, api_url_root='', api_token='', limit=0,
-                 test_mode=False, verbosity=1, do_update_if_exists=False, import_delay=0):
+                 test_mode=False, verbosity=1, do_update_if_exists=False, import_delay=0,
+                 reference_batch_size=DEFAULT_REFERENCE_BATCH_SIZE, auto_batch_references=True):
         """ Initialize this object """
 
         self.input_list = input_list
@@ -592,7 +582,8 @@ class OclFlexImporter(object):
         self.limit = limit
         self.import_delay = import_delay
         self.skip_line_count = False
-
+        self.reference_batch_size = reference_batch_size
+        self.auto_batch_references = auto_batch_references
         self.import_results = None
         self.cache_obj_exists = {}
 
@@ -602,6 +593,7 @@ class OclFlexImporter(object):
             'Content-Type': 'application/json'
         }
 
+
     def log(self, *args):
         """ Output log information """
         sys.stdout.write('[' + str(datetime.now()) + '] ')
@@ -610,6 +602,7 @@ class OclFlexImporter(object):
             sys.stdout.write(' ')
         sys.stdout.write('\n')
         sys.stdout.flush()
+
 
     def log_settings(self):
         """ Output log of the object settings """
@@ -622,6 +615,7 @@ class OclFlexImporter(object):
                  ", Verbosity:", self.verbosity,
                  ", Import Delay: ", self.import_delay)
 
+
     def load_from_file(self, file_path):
         """ Load the OCL-formatted JSON file from the specified path """
         self.file_path = file_path
@@ -629,6 +623,7 @@ class OclFlexImporter(object):
         with open(self.file_path) as json_file:
             for json_line_raw in json_file:
                 self.input_list.append(json.loads(json_line_raw))
+
 
     def process(self):
         """
@@ -660,15 +655,14 @@ class OclFlexImporter(object):
             count += 1
             if "type" in json_line_obj:
                 obj_type = json_line_obj.pop("type")
-                if obj_type in obj_def_keys:
-                    self.log('')
+                if (obj_type == oclconstants.OclConstants.RESOURCE_TYPE_REFERENCE and
+                        self.auto_batch_references):
+                    self.process_reference_object(
+                        json_line_obj, batch_size=self.reference_batch_size)
+                    num_processed += 1
+                elif obj_type in obj_def_keys:
                     self.process_object(obj_type, json_line_obj)
                     num_processed += 1
-                    self.log('[%s]' % self.import_results.get_detailed_summary())
-
-                    # Optionally delay before processing next row
-                    if self.import_delay and not self.test_mode:
-                        time.sleep(self.import_delay)
                 else:
                     message = "Unrecognized 'type' attribute '%s' for object: %s" % (
                         obj_type, json_line_raw)
@@ -683,9 +677,16 @@ class OclFlexImporter(object):
                 self.log('**** SKIPPING: %s' % message)
                 num_skipped += 1
 
+            self.log('[%s]' % self.import_results.get_detailed_summary())
+
+            # Optionally delay before processing next row
+            if self.import_delay and not self.test_mode:
+                time.sleep(self.import_delay)
+
         self.import_results.elapsed_seconds = time.time() - start_time
 
         return count
+
 
     def does_object_exist(self, obj_url, use_cache=True):
         """ Returns whether an object at the specified URL already exists """
@@ -706,90 +707,107 @@ class OclFlexImporter(object):
                 "GET " + self.api_url_root + obj_url,
                 "Unexpected status code returned: " + str(request_existence.status_code))
 
+
     def does_mapping_exist(self, obj_url, obj):
         """
         Returns whether the specified mapping already exists --
         Equivalent mapping must have matching source, from_concept, to_concept, and map_type
         """
 
-        '''
-        # Return false if correct fields not set
-        mapping_target = None
-        if ('from_concept_url' not in obj or not obj['from_concept_url']
-                or 'map_type' not in obj or not obj['map_type']):
-            # Invalid mapping -- no from_concept or map_type
-            return False
-        if 'to_concept_url' in obj:
-            mapping_target = self.INTERNAL_MAPPING
-        elif 'to_source_url' in obj and 'to_concept_code' in obj:
-            mapping_target = self.EXTERNAL_MAPPING
-        else:
-            # Invalid to_concept
-            return False
+        # # Return false if correct fields not set
+        # mapping_target = None
+        # if ('from_concept_url' not in obj or not obj['from_concept_url']
+        #         or 'map_type' not in obj or not obj['map_type']):
+        #     # Invalid mapping -- no from_concept or map_type
+        #     return False
+        # if 'to_concept_url' in obj:
+        #     mapping_target = self.INTERNAL_MAPPING
+        # elif 'to_source_url' in obj and 'to_concept_code' in obj:
+        #     mapping_target = self.EXTERNAL_MAPPING
+        # else:
+        #     # Invalid to_concept
+        #     return False
 
-        # Build query parameters
-        params = {
-            'fromConceptOwner': '',
-            'fromConceptOwnerType': '',
-            'fromConceptSource': '',
-            'fromConcept': obj['from_concept_url'],
-            'mapType': obj['map_type'],
-            'toConceptOwner': '',
-            'toConceptOwnerType': '',
-            'toConceptSource': '',
-            'toConcept': '',
-        }
-        #if mapping_target == self.INTERNAL_MAPPING:
-        #    params['toConcept'] = obj['to_concept_url']
-        #else:
-        #    params['toConcept'] = obj['to_concept_code']
+        # # Build query parameters
+        # params = {
+        #     'fromConceptOwner': '',
+        #     'fromConceptOwnerType': '',
+        #     'fromConceptSource': '',
+        #     'fromConcept': obj['from_concept_url'],
+        #     'mapType': obj['map_type'],
+        #     'toConceptOwner': '',
+        #     'toConceptOwnerType': '',
+        #     'toConceptSource': '',
+        #     'toConcept': '',
+        # }
+        # #if mapping_target == self.INTERNAL_MAPPING:
+        # #    params['toConcept'] = obj['to_concept_url']
+        # #else:
+        # #    params['toConcept'] = obj['to_concept_code']
 
-        # Use API to check if mapping exists
-        request_existence = requests.head(
-            self.api_url_root + obj_url, headers=self.api_headers, params=params)
-        if request_existence.status_code == requests.codes.ok:
-            if 'num_found' in request_existence.headers and int(
-                    request_existence.headers['num_found']) >= 1:
-                return True
-            else:
-                return False
-        elif request_existence.status_code == requests.codes.not_found:
-            return False
-        else:
-            raise UnexpectedStatusCodeError(
-                "GET " + self.api_url_root + obj_url,
-                "Unexpected status code returned: " + str(request_existence.status_code))
-        '''
+        # # Use API to check if mapping exists
+        # request_existence = requests.head(
+        #     self.api_url_root + obj_url, headers=self.api_headers, params=params)
+        # if request_existence.status_code == requests.codes.ok:
+        #     if 'num_found' in request_existence.headers and int(
+        #             request_existence.headers['num_found']) >= 1:
+        #         return True
+        #     else:
+        #         return False
+        # elif request_existence.status_code == requests.codes.not_found:
+        #     return False
+        # else:
+        #     raise UnexpectedStatusCodeError(
+        #         "GET " + self.api_url_root + obj_url,
+        #         "Unexpected status code returned: " + str(request_existence.status_code))
 
         return False
+
 
     def does_reference_exist(self, obj_url, obj):
         """ Returns whether the specified reference already exists """
 
-        """
-        # Return false if no expression
-        if 'expression' not in obj or not obj['expression']:
-            return False
+        # # Return false if no expression
+        # if 'expression' not in obj or not obj['expression']:
+        #     return False
 
-        # Use the API to check if object exists
-        params = {'q': obj['expression']}
-        request_existence = requests.head(
-            self.api_url_root + obj_url, headers=self.api_headers, params=params)
-        if request_existence.status_code == requests.codes.ok:
-            if 'num_found' in request_existence.headers and int(
-                    request_existence.headers['num_found']) >= 1:
-                return True
-            else:
-                return False
-        elif request_existence.status_code == requests.codes.not_found:
-            return False
-        else:
-            raise UnexpectedStatusCodeError(
-                "GET " + self.api_url_root + obj_url,
-                "Unexpected status code returned: " + str(request_existence.status_code))
-        """
+        # # Use the API to check if object exists
+        # params = {'q': obj['expression']}
+        # request_existence = requests.head(
+        #     self.api_url_root + obj_url, headers=self.api_headers, params=params)
+        # if request_existence.status_code == requests.codes.ok:
+        #     if 'num_found' in request_existence.headers and int(
+        #             request_existence.headers['num_found']) >= 1:
+        #         return True
+        #     else:
+        #         return False
+        # elif request_existence.status_code == requests.codes.not_found:
+        #     return False
+        # else:
+        #     raise UnexpectedStatusCodeError(
+        #         "GET " + self.api_url_root + obj_url,
+        #         "Unexpected status code returned: " + str(request_existence.status_code))
 
         return False
+
+
+    def process_reference_object(self, obj, batch_size=DEFAULT_REFERENCE_BATCH_SIZE):
+        """ Split list of references into batches and process """
+        obj_type = oclconstants.OclConstants.RESOURCE_TYPE_REFERENCE
+        base_obj = obj.copy()
+        base_obj_data = base_obj.pop('data')
+        expressions_raw = base_obj_data['expressions']
+        expressions_chunked = [
+            expressions_raw[i * batch_size:(i + 1) * batch_size] for i in range(
+                (len(expressions_raw) + batch_size - 1) // batch_size)]
+        if len(expressions_chunked) > 1:
+            self.log('List of reference automatically split into %s batches' % (
+                str(len(expressions_chunked))))
+        for chunk in expressions_chunked:
+            new_obj = base_obj.copy()
+            new_obj['data'] = {'expressions': chunk}
+            self.process_object(obj_type, new_obj)
+
 
     def process_object(self, obj_type, obj):
         """ Processes an individual document in the import file """
@@ -994,8 +1012,6 @@ class OclFlexImporter(object):
             self.log("** INFO: Object does not exist so we'll create it at: %s%s" % (
                 self.api_url_root, obj_url))
 
-        # TODO: Validate the JSON object
-
         # Create/update the object
         try:
             self.update_or_create(
@@ -1010,6 +1026,7 @@ class OclFlexImporter(object):
                 query_params=query_params)
         except requests.exceptions.HTTPError as err:
             self.log("ERROR: ", err)
+
 
     def update_or_create(self, obj_type='', obj_id='', obj_owner_url='',
                          obj_repo_url='', obj_url='', new_obj_url='',
@@ -1053,6 +1070,7 @@ class OclFlexImporter(object):
             http_method=method, obj_owner_url=obj_owner_url, status_code=request_result.status_code,
             text=json.dumps(obj), message=request_result.text)
         request_result.raise_for_status()
+
 
     def find_nth(self, haystack, needle, n):
         """ Find nth occurrence of a substring within a string """
