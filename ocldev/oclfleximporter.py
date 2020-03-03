@@ -440,8 +440,8 @@ class OclFlexImporter(object):
     the OCL API rather than the batch importer.
     """
 
-    # Default reference batch size
-    DEFAULT_REFERENCE_BATCH_SIZE = 25
+    # Default reference batch size -- set to 0 to disable batching by default
+    DEFAULT_REFERENCE_BATCH_SIZE = 0
 
     # Constants for import action types
     ACTION_TYPE_NEW = 'new'
@@ -567,7 +567,7 @@ class OclFlexImporter(object):
 
     def __init__(self, file_path='', input_list=None, api_url_root='', api_token='', limit=0,
                  test_mode=False, verbosity=1, do_update_if_exists=False, import_delay=0,
-                 reference_batch_size=DEFAULT_REFERENCE_BATCH_SIZE, auto_batch_references=True):
+                 reference_batch_size=DEFAULT_REFERENCE_BATCH_SIZE):
         """ Initialize this object """
 
         self.input_list = input_list
@@ -583,7 +583,6 @@ class OclFlexImporter(object):
         self.import_delay = import_delay
         self.skip_line_count = False
         self.reference_batch_size = reference_batch_size
-        self.auto_batch_references = auto_batch_references
         self.import_results = None
         self.cache_obj_exists = {}
 
@@ -656,7 +655,7 @@ class OclFlexImporter(object):
             if "type" in json_line_obj:
                 obj_type = json_line_obj.pop("type")
                 if (obj_type == oclconstants.OclConstants.RESOURCE_TYPE_REFERENCE and
-                        self.auto_batch_references):
+                        self.reference_batch_size):
                     self.process_reference_object(
                         json_line_obj, batch_size=self.reference_batch_size)
                     num_processed += 1
@@ -796,6 +795,8 @@ class OclFlexImporter(object):
         obj_type = oclconstants.OclConstants.RESOURCE_TYPE_REFERENCE
         base_obj = obj.copy()
         base_obj_data = base_obj.pop('data')
+        if not batch_size:
+            batch_size = len(base_obj_data['expressions'])
         expressions_raw = base_obj_data['expressions']
         expressions_chunked = [
             expressions_raw[i * batch_size:(i + 1) * batch_size] for i in range(
