@@ -34,7 +34,7 @@ class OclResourceList(object):
             raise StopIteration
         else:
             self._current_iter += 1
-            return self._resources.get(self._current_iter - 1)
+            return self._resources[self._current_iter - 1]
 
     def append(self, resources):
         """ Add one resource or a list of resources to the list """
