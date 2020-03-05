@@ -13,7 +13,7 @@ class OclJsonValidator(object):
         """ Validate list of resources """
         if isinstance(resources, dict):
             resources = [resources]
-        if isinstance(resources, list) and isinstance(resources, oclresourcelist.OclResourceList):
+        if isinstance(resources, list) or isinstance(resources, oclresourcelist.OclResourceList):
             for resource in resources:
                 OclJsonValidator.validate_resource(resource)
         else:
@@ -55,7 +55,7 @@ class OclCsvValidator(object):
         """ Validate list of resources """
         if isinstance(resources, dict):
             resources = [resources]
-        if isinstance(resources, list) and isinstance(resources, oclresourcelist.OclResourceList):
+        if isinstance(resources, list) or isinstance(resources, oclresourcelist.OclResourceList):
             for resource in resources:
                 OclCsvValidator.validate_resource(resource)
         else:
