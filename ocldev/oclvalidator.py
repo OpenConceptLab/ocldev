@@ -5,6 +5,7 @@ https://python-jsonschema.readthedocs.io/en/latest/
 """
 import jsonschema
 import oclresourcelist
+import oclconstants
 
 
 class OclJsonValidator(object):
@@ -19,17 +20,17 @@ class OclJsonValidator(object):
             for resource in resources:
                 OclJsonValidator.validate_resource(resource)
         else:
-            raise TypeError("Expected OclResourceList, list of resources, or a single resource. '%s' given." % str(
-                type(resources)))
+            raise TypeError("Expected OclResourceList, list of resources, or a single resource."
+                            " '%s' given." % str(type(resources)))
 
     @staticmethod
     def validate_resource(resource, resource_type=''):
         """ Validate resource against schema """
         if not resource_type:
-            if 'resource_type' in resource:
-                resource_type = resource['resource_type']
+            if 'type' in resource:
+                resource_type = resource['type']
         if not resource_type:
-            raise Exception("Must provide 'resource_type' as a resource attribute or "
+            raise Exception("Must provide 'type' as a resource attribute or "
                             "specify as an argument. Neither provided.")
         elif resource_type not in OclJsonValidator.VALIDATION_SCHEMAS:
             raise Exception("Unrecognized resource type '%s'" % resource_type)
@@ -40,14 +41,23 @@ class OclJsonValidator(object):
     VALIDATION_SCHEMA_CONCEPT = {}
     VALIDATION_SCHEMA_MAPPING = {}
     VALIDATION_SCHEMA_REFERENCE = {}
-    VALIDATION_SCHEMA_REPOSITORY_VERSION = {}
+    VALIDATION_SCHEMA_SOURCE_VERSION = {}
+    VALIDATION_SCHEMA_COLLECTION_VERSION = {}
     VALIDATION_SCHEMA_SOURCE = {}
     VALIDATION_SCHEMA_COLLECTION = {}
     VALIDATION_SCHEMA_ORGANIZATION = {}
     VALIDATION_SCHEMAS = {
-        'Concept': VALIDATION_SCHEMA_CONCEPT,
-        'Mapping': VALIDATION_SCHEMA_MAPPING,
+        oclconstants.OclConstants.RESOURCE_TYPE_ORGANIZATION: VALIDATION_SCHEMA_ORGANIZATION,
+        oclconstants.OclConstants.RESOURCE_TYPE_SOURCE: VALIDATION_SCHEMA_SOURCE,
+        oclconstants.OclConstants.RESOURCE_TYPE_COLLECTION: VALIDATION_SCHEMA_COLLECTION,
+        oclconstants.OclConstants.RESOURCE_TYPE_CONCEPT: VALIDATION_SCHEMA_CONCEPT,
+        oclconstants.OclConstants.RESOURCE_TYPE_MAPPING: VALIDATION_SCHEMA_MAPPING,
+        oclconstants.OclConstants.RESOURCE_TYPE_REFERENCE: VALIDATION_SCHEMA_REFERENCE,
+        oclconstants.OclConstants.RESOURCE_TYPE_SOURCE_VERSION: VALIDATION_SCHEMA_SOURCE_VERSION,
+        oclconstants.OclConstants.RESOURCE_TYPE_COLLECTION_VERSION:
+            VALIDATION_SCHEMA_COLLECTION_VERSION,
     }
+
 
 class OclCsvValidator(object):
     """ Class to validate OCL-formatted CSV resource definitions """
@@ -61,8 +71,8 @@ class OclCsvValidator(object):
             for resource in resources:
                 OclCsvValidator.validate_resource(resource)
         else:
-            raise TypeError("Expected OclResourceList, list of resources, or a single resource. '%s' given." % str(
-                type(resources)))
+            raise TypeError("Expected OclResourceList, list of resources, or a single resource. "
+                            "'%s' given." % str(type(resources)))
 
     @staticmethod
     def validate_resource(resource, resource_type=''):
@@ -162,7 +172,8 @@ class OclCsvValidator(object):
         "required": ["resource_type", "owner_id", "source", "from_concept_url"]
     }
     VALIDATION_SCHEMA_REFERENCE = {}
-    VALIDATION_SCHEMA_REPOSITORY_VERSION = {}
+    VALIDATION_SCHEMA_SOURCE_VERSION = {}
+    VALIDATION_SCHEMA_COLLECTION_VERSION = {}
     VALIDATION_SCHEMA_COLLECTION = {}
     VALIDATION_SCHEMA_SOURCE = {
         "$schema": "http://json-schema.org/draft-07/schema#",
@@ -274,8 +285,13 @@ class OclCsvValidator(object):
         "required": ["resource_type", "id", "name"]
     }
     VALIDATION_SCHEMAS = {
-        'Organization': VALIDATION_SCHEMA_ORGANIZATION,
-        'Source': VALIDATION_SCHEMA_SOURCE,
-        'Concept': VALIDATION_SCHEMA_CONCEPT,
-        'Mapping': VALIDATION_SCHEMA_MAPPING,
+        oclconstants.OclConstants.RESOURCE_TYPE_ORGANIZATION: VALIDATION_SCHEMA_ORGANIZATION,
+        oclconstants.OclConstants.RESOURCE_TYPE_SOURCE: VALIDATION_SCHEMA_SOURCE,
+        oclconstants.OclConstants.RESOURCE_TYPE_COLLECTION: VALIDATION_SCHEMA_COLLECTION,
+        oclconstants.OclConstants.RESOURCE_TYPE_CONCEPT: VALIDATION_SCHEMA_CONCEPT,
+        oclconstants.OclConstants.RESOURCE_TYPE_MAPPING: VALIDATION_SCHEMA_MAPPING,
+        oclconstants.OclConstants.RESOURCE_TYPE_REFERENCE: VALIDATION_SCHEMA_REFERENCE,
+        oclconstants.OclConstants.RESOURCE_TYPE_SOURCE_VERSION: VALIDATION_SCHEMA_SOURCE_VERSION,
+        oclconstants.OclConstants.RESOURCE_TYPE_COLLECTION_VERSION:
+            VALIDATION_SCHEMA_COLLECTION_VERSION,
     }
