@@ -32,6 +32,7 @@ from datetime import datetime
 import urllib
 import requests
 import oclconstants
+import oclresourcelist
 
 
 class OclImportError(Exception):
@@ -367,8 +368,8 @@ class OclBulkImporter(object):
         :param test_mode: Set to True to simulate the import
         """
 
-        # Prepare the import JSON
-        if input_list:
+        # Prepare the body (import JSON) of the post request
+        if isinstance(input_list, (list, oclresourcelist.OclResourceList)):
             # change to a string with line separators
             post_data = ''
             for line in input_list:
@@ -381,12 +382,12 @@ class OclBulkImporter(object):
         # Process the import
         url = api_url_root + OclBulkImporter.OCL_BULK_IMPORT_API_ENDPOINT
         api_headers = {'Authorization': 'Token ' + api_token}
-        import_request = requests.post(url, headers=api_headers, data=post_data)
-        # import_request.raise_for_status()
-        # import_response = import_request.json()
-        # self.task_id = import_response['task']
-        # return self.task_id
-        return import_request
+        import_response = requests.post(url, headers=api_headers, data=post_data)
+        # import_response.raise_for_status()
+        # import_response_json = import_response.json()
+        # task_id = import_response_json['task']
+        # return task_id
+        return import_response
 
     @staticmethod
     def get_bulk_import_results(task_id=None, api_url_root='', api_token='',

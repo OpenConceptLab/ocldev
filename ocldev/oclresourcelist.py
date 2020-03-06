@@ -70,9 +70,11 @@ class OclResourceList(object):
         for resource in self._resources:
             writer.writerow(resource)
 
-    def get_unique_column_headers(self):
+    def get_unique_column_headers(self, default_columns=None):
         """ Get a list of unique column headers in the resource list """
-        columns = ['resource_type', 'owner', 'id']
+        columns = []
+        if default_columns:
+            columns = default_columns
         for resource in self._resources:
             for key in resource:
                 if key not in columns:
@@ -91,6 +93,10 @@ class OclCsvResourceList(OclResourceList):
         """ Validate the resource list using the OclCsvValidator """
         oclvalidator.OclCsvValidator.validate(self)
 
+    def get_unique_column_headers(self, default_columns=None):
+        default_columns = ['resource_type', 'owner_id', 'id']
+        return OclResourceList.get_unique_column_headers(self, default_columns=default_columns)
+
 
 class OclJsonResourceList(OclResourceList):
     """ Generic class to manage a list of OCL resources """
@@ -102,3 +108,7 @@ class OclJsonResourceList(OclResourceList):
     def validate(self):
         """ Validate the resource list using the OclCsvValidator """
         oclvalidator.OclJsonValidator.validate(self)
+
+    def get_unique_column_headers(self, default_columns=None):
+        default_columns = ['type', 'owner', 'id']
+        return OclResourceList.get_unique_column_headers(self, default_columns=default_columns)
