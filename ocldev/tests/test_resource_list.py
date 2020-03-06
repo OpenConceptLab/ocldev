@@ -64,6 +64,7 @@ def test_csv_to_json_conversion():
     assert expected_json_output == json_resources.to_json()
 
 def test_add_two_resources_lists():
+    import ocldev.oclresourcelist
     resource_a = {
         'resource_type': 'Concept',
         'id': 'A',
@@ -80,11 +81,13 @@ def test_add_two_resources_lists():
         'resource_type': 'Mapping',
         'id': 'B', 'name': 'Bob', 'owner_id': 'PEPFAR', 'source': 'PLM'
     }
-    resource_list_a = ocldev.oclresourcelist.OclResourceList([resource_a])
-    resource_list_b = ocldev.oclresourcelist.OclResourceList([resource_b])
+    resource_list_a = ocldev.oclresourcelist.OclCsvResourceList([resource_a])
+    resource_list_b = ocldev.oclresourcelist.OclCsvResourceList([resource_b])
     resource_list_c = resource_list_a + resource_list_b
     resource_list_d = resource_list_b + resource_list_a
-    expected_list_c = ocldev.oclresourcelist.OclResourceList([resource_a, resource_b])
-    expected_list_d = ocldev.oclresourcelist.OclResourceList([resource_b, resource_a])
+    expected_list_c = ocldev.oclresourcelist.OclCsvResourceList([resource_a, resource_b])
+    expected_list_d = ocldev.oclresourcelist.OclCsvResourceList([resource_b, resource_a])
     assert resource_list_c == expected_list_c
     assert resource_list_d == expected_list_d
+    assert type(expected_list_c) == type(resource_list_a)
+    assert type(expected_list_d) == type(resource_list_a)

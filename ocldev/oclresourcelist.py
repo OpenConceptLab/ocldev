@@ -33,7 +33,7 @@ class OclResourceList(object):
         _output_resources = list(self._resources)
         for resource in new_resources:
             _output_resources.append(resource.copy())
-        return _output_resources
+        return OclResourceList(_output_resources)
 
     def __eq__(self, other):
         """ Return whether the two objects have the same resource lists """
@@ -115,7 +115,15 @@ class OclCsvResourceList(OclResourceList):
 
     def get_unique_column_headers(self, default_columns=None):
         default_columns = ['resource_type', 'owner_id', 'id']
-        return OclResourceList.get_unique_column_headers(self, default_columns=default_columns)
+        return super(OclResourceList, self).get_unique_column_headers(
+            default_columns=default_columns)
+
+    def __add__(self, new_resources):
+        """ Add two resource lists together """
+        _output_resources = list(self._resources)
+        for resource in new_resources:
+            _output_resources.append(resource.copy())
+        return OclCsvResourceList(_output_resources)
 
 
 class OclJsonResourceList(OclResourceList):
@@ -131,4 +139,12 @@ class OclJsonResourceList(OclResourceList):
 
     def get_unique_column_headers(self, default_columns=None):
         default_columns = ['type', 'owner', 'id']
-        return OclResourceList.get_unique_column_headers(self, default_columns=default_columns)
+        return super(OclResourceList, self).get_unique_column_headers(
+            default_columns=default_columns)
+
+    def __add__(self, new_resources):
+        """ Add two resource lists together """
+        _output_resources = list(self._resources)
+        for resource in new_resources:
+            _output_resources.append(resource.copy())
+        return OclJsonResourceList(_output_resources)

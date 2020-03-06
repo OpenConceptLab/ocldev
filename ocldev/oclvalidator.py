@@ -163,10 +163,119 @@ class OclCsvValidator(object):
     }
     VALIDATION_SCHEMA_REFERENCE = {}
     VALIDATION_SCHEMA_REPOSITORY_VERSION = {}
-    VALIDATION_SCHEMA_SOURCE = {}
     VALIDATION_SCHEMA_COLLECTION = {}
-    VALIDATION_SCHEMA_ORGANIZATION = {}
+    VALIDATION_SCHEMA_SOURCE = {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "$id": "http://openconceptlab.org/csv_source.schema.json",
+        "title": "csv_source",
+        "description": "A CSV-based OCL Source",
+        "type": "object",
+        "properties": {
+            "resource_type": {
+                "description": "OCL resource type",
+                "type": "string"
+            },
+            "owner_id": {
+                "description": "ID for the owner of this resource",
+                "type": "string"
+            },
+            "owner_type": {
+                "description": ("Resource type for the owner of this resource, "
+                                "either an Organization (default) or User."),
+                "type": "string"
+            },
+            "id": {
+                "description": "ID of this resource",
+                "type": "string"
+            },
+            "name": {
+                "description": "Name of the source",
+                "type": "string"
+            },
+            "short_code": {
+                "description": "Short code of the source",
+                "type": "string"
+            },
+            "full_name": {
+                "description": "Fully specified name of the source",
+                "type": "string"
+            },
+            "external_id": {
+                "description": "External ID for the source",
+                "type": "string"
+            },
+            "public_access": {
+                "description": "Public access setting: View, Edit, or None",
+                "type": "string"
+            },
+            "source_type": {
+                "description": "Source type, eg Dictionary, Interface Terminology, etc",
+                "type": "string"
+            },
+            "website": {
+                "description": "Website URL",
+                "type": "string"
+            },
+            "description": {
+                "description": "Description of this repository",
+                "type": "string"
+            },
+            "default_locale": {
+                "description": "Default locale, eg 'en', for new content in this repository",
+                "type": "string"
+            },
+            "supported_locales": {
+                "description": "List of supported locales for this repository, eg \"en, es, fr\"",
+                "type": "string"
+            },
+            "custom_validation_schema": {
+                "description": "Custom validation schema for this repository",
+                "type": "string"
+            },
+        },
+        "required": ["resource_type", "owner", "id", "name"]
+    }
+    VALIDATION_SCHEMA_ORGANIZATION = {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "$id": "http://openconceptlab.org/csv_organization.schema.json",
+        "title": "csv_organization",
+        "description": "A CSV-based OCL Organization",
+        "type": "object",
+        "properties": {
+            "resource_type": {
+                "description": "OCL resource type",
+                "type": "string"
+            },
+            "id": {
+                "description": "ID of this resource",
+                "type": "string"
+            },
+            "name": {
+                "description": "Name of the organization",
+                "type": "string"
+            },
+            "company": {
+                "description": "Company name",
+                "type": "string"
+            },
+            "website": {
+                "description": "Website URL",
+                "type": "string"
+            },
+            "location": {
+                "description": "Location",
+                "type": "string"
+            },
+            "public_access": {
+                "description": "Public access setting: View, Edit, or None",
+                "type": "string"
+            },
+        },
+        "required": ["resource_type", "id", "name"]
+    }
     VALIDATION_SCHEMAS = {
+        'Organization': VALIDATION_SCHEMA_ORGANIZATION,
+        'Source': VALIDATION_SCHEMA_SOURCE,
         'Concept': VALIDATION_SCHEMA_CONCEPT,
         'Mapping': VALIDATION_SCHEMA_MAPPING,
     }
