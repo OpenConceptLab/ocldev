@@ -63,3 +63,28 @@ def test_csv_to_json_conversion():
     ]
     assert expected_json_output == json_resources.to_json()
 
+def test_add_two_resources_lists():
+    resource_a = {
+        'resource_type': 'Concept',
+        'id': 'A',
+        'name': 'Adam',
+        'owner_id': 'PEPFAR',
+        'source': 'PLM',
+        'concept_class': 'Misc',
+        'datatype': 'Numeric',
+        'attr:MyAttribute': 'My custom value',
+        'map_type[1]': 'Same As',
+        'map_to_concept_url[1]': '/orgs/CIEL/sources/CIEL/concepts/1013/'
+    }
+    resource_b = {
+        'resource_type': 'Mapping',
+        'id': 'B', 'name': 'Bob', 'owner_id': 'PEPFAR', 'source': 'PLM'
+    }
+    resource_list_a = ocldev.oclresourcelist.OclResourceList([resource_a])
+    resource_list_b = ocldev.oclresourcelist.OclResourceList([resource_b])
+    resource_list_c = resource_list_a + resource_list_b
+    resource_list_d = resource_list_b + resource_list_a
+    expected_list_c = ocldev.oclresourcelist.OclResourceList([resource_a, resource_b])
+    expected_list_d = ocldev.oclresourcelist.OclResourceList([resource_b, resource_a])
+    assert resource_list_c == expected_list_c
+    assert resource_list_d == expected_list_d

@@ -28,6 +28,26 @@ class OclResourceList(object):
         """ Number of resources in this list """
         return len(self._resources)
 
+    def __add__(self, new_resources):
+        """ Add two resource lists together """
+        _output_resources = list(self._resources)
+        for resource in new_resources:
+            _output_resources.append(resource.copy())
+        return _output_resources
+
+    def __eq__(self, other):
+        """ Return whether the two objects have the same resource lists """
+        if len(self) != len(other):
+            return False
+        for i in range(len(self)):
+            if self[i] != other[i]:
+                return False
+        return True
+
+    def __ne__(self, other):
+        """ Return whether the two objects have different same resource lists """
+        return not self.__eq__(other)
+
     def next(self):
         """ Get the next item in the list """
         if self._current_iter >= len(self._resources):
