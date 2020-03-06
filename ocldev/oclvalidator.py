@@ -244,7 +244,7 @@ class OclCsvValidator(object):
                 "type": "string"
             },
         },
-        "required": ["resource_type", "owner", "id", "name"]
+        "required": ["resource_type", "owner_id", "id", "name"]
     }
     VALIDATION_SCHEMA_ORGANIZATION = {
         "$schema": "http://json-schema.org/draft-07/schema#",
