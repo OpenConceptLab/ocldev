@@ -1,8 +1,8 @@
 """ Classes to manage a list of OCL resources """
-import json
 import csv
 import sys
 import oclvalidator
+import oclcsvtojsonconverter
 
 
 class OclResourceList(object):
@@ -49,10 +49,17 @@ class OclResourceList(object):
         """ Get an item from the list """
         return self._resources[index]
 
-    def display_as_json(self):
-        """ Display the resource list as JSON """
-        for resource in self._resources:
-            print json.dumps(resource)
+    def to_json(self):
+        """
+        Return JSON representation of the resource list, which is simply a copy of
+        the resources in this list.
+        """
+        return list(self._resources)
+
+    def convert_to_ocl_formatted_json(self):
+        """ Get the resource list as an OclJsonResourceList with OCL-formatted JSON """
+        csv_converter = oclcsvtojsonconverter.OclStandardCsvToJsonConverter(input_list=self)
+        return OclJsonResourceList(csv_converter.process())
 
     def display_as_csv(self):
         """ Display the resource list as CSV """

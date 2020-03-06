@@ -1,5 +1,7 @@
 """
 Classes to validate JSON or CSV resource definitions
+
+https://python-jsonschema.readthedocs.io/en/latest/
 """
 import jsonschema
 import oclresourcelist
@@ -13,7 +15,7 @@ class OclJsonValidator(object):
         """ Validate list of resources """
         if isinstance(resources, dict):
             resources = [resources]
-        if isinstance(resources, list) or isinstance(resources, oclresourcelist.OclResourceList):
+        if isinstance(resources, (list, oclresourcelist.OclResourceList)):
             for resource in resources:
                 OclJsonValidator.validate_resource(resource)
         else:
@@ -55,7 +57,7 @@ class OclCsvValidator(object):
         """ Validate list of resources """
         if isinstance(resources, dict):
             resources = [resources]
-        if isinstance(resources, list) or isinstance(resources, oclresourcelist.OclResourceList):
+        if isinstance(resources, (list, oclresourcelist.OclResourceList)):
             for resource in resources:
                 OclCsvValidator.validate_resource(resource)
         else:
@@ -85,24 +87,28 @@ class OclCsvValidator(object):
         "type": "object",
         "properties": {
             "resource_type": {
-                "description": "",
+                "description": "OCL resource type",
                 "type": "string"
             },
             "owner_id": {
-                "description": "ID of the owner of this concept",
+                "description": "ID for the owner of this resource",
                 "type": "string"
             },
             "owner_type": {
-                "description": ("Resource type of the owner of this concept, "
-                                "either an Organization or User"),
+                "description": ("Resource type for the owner of this resource, "
+                                "either an Organization (default) or User."),
                 "type": "string"
             },
             "source": {
-                "description": "OCL source",
+                "description": "OCL source for this resource",
+                "type": "string"
+            },
+            "concept_class": {
+                "description": "Class for this concpet, eg Symptom, Diagnosis",
                 "type": "string"
             },
             "id": {
-                "description": "ID of the concept",
+                "description": "ID of this resource",
                 "type": "string"
             },
             "name": {
@@ -110,9 +116,51 @@ class OclCsvValidator(object):
                 "type": "string"
             }
         },
-        "required": ["resource_type", "id", "owner", "source", "concept_class"]
+        "required": ["resource_type", "id", "owner_id", "source", "concept_class", "name"]
     }
-    VALIDATION_SCHEMA_MAPPING = {}
+    VALIDATION_SCHEMA_MAPPING = {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "$id": "http://openconceptlab.org/csv_mapping.schema.json",
+        "title": "CSV_Mapping",
+        "description": "A CSV-based OCL mapping",
+        "type": "object",
+        "properties": {
+            "resource_type": {
+                "description": "OCL resource type",
+                "type": "string"
+            },
+            "owner_id": {
+                "description": "ID for the owner of this resource",
+                "type": "string"
+            },
+            "owner_type": {
+                "description": ("Resource type for the owner of this resource, "
+                                "either an Organization (default) or User."),
+                "type": "string"
+            },
+            "source": {
+                "description": "OCL source for this resource",
+                "type": "string"
+            },
+            "id": {
+                "description": "ID of this resource. Automatically assigned if omitted.",
+                "type": "string"
+            },
+            "from_concept_url": {
+                "description": "Relative URL of the from_concept",
+                "type": "string"
+            },
+            "to_concept_url": {
+                "description": "Relative URL of the to_concept",
+                "type": "string"
+            },
+            "to_source_url": {
+                "description": "Relative URL of the to_source",
+                "type": "string"
+            },
+        },
+        "required": ["resource_type", "owner_id", "source", "from_concept_url"]
+    }
     VALIDATION_SCHEMA_REFERENCE = {}
     VALIDATION_SCHEMA_REPOSITORY_VERSION = {}
     VALIDATION_SCHEMA_SOURCE = {}
