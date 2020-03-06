@@ -115,8 +115,7 @@ class OclCsvResourceList(OclResourceList):
 
     def get_unique_column_headers(self, default_columns=None):
         default_columns = ['resource_type', 'owner_id', 'id']
-        return super(OclResourceList, self).get_unique_column_headers(
-            default_columns=default_columns)
+        return OclResourceList.get_unique_column_headers(self, default_columns=default_columns)
 
     def __add__(self, new_resources):
         """ Add two resource lists together """
@@ -139,8 +138,7 @@ class OclJsonResourceList(OclResourceList):
 
     def get_unique_column_headers(self, default_columns=None):
         default_columns = ['type', 'owner', 'id']
-        return super(OclResourceList, self).get_unique_column_headers(
-            default_columns=default_columns)
+        return OclResourceList.get_unique_column_headers(self, default_columns=default_columns)
 
     def __add__(self, new_resources):
         """ Add two resource lists together """

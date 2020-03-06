@@ -64,7 +64,6 @@ def test_csv_to_json_conversion():
     assert expected_json_output == json_resources.to_json()
 
 def test_add_two_resources_lists():
-    import ocldev.oclresourcelist
     resource_a = {
         'resource_type': 'Concept',
         'id': 'A',
@@ -91,3 +90,25 @@ def test_add_two_resources_lists():
     assert resource_list_d == expected_list_d
     assert type(expected_list_c) == type(resource_list_a)
     assert type(expected_list_d) == type(resource_list_a)
+
+def test_display_resource_list_as_csv():
+    resource_a = {
+        'resource_type': 'Concept',
+        'id': 'A',
+        'name': 'Adam',
+        'owner_id': 'PEPFAR',
+        'source': 'PLM',
+        'concept_class': 'Misc',
+        'datatype': 'Numeric',
+        'attr:MyAttribute': 'My custom value',
+        'map_type[1]': 'Same As',
+        'map_to_concept_url[1]': '/orgs/CIEL/sources/CIEL/concepts/1013/'
+    }
+    resource_b = {
+        'resource_type': 'Mapping',
+        'id': 'B', 'name': 'Bob', 'owner_id': 'PEPFAR', 'source': 'PLM'
+    }
+    resource_list = ocldev.oclresourcelist.OclCsvResourceList([resource_a, resource_b])
+    resource_list.display_as_csv()
+    # Just testing that this does not fail for some reason
+    assert True == True
