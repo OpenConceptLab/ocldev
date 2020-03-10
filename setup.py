@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name='ocldev',
-    version='0.1.51',
+    version='0.1.52',
     author='Open Concept Lab',
     author_email='info@openconceptlab.org',
     description='Python development library for working with OCL resources and APIs',
@@ -14,18 +14,8 @@ setuptools.setup(
     url='http://github.com/OpenConceptLab/ocldev',
     packages=setuptools.find_packages(),
     install_requires=[
-        'csv',
-        'datetime',
-        'json',
         'jsonschema',
-        're',
         'requests',
-        'sys',
-        'time',
-        'urllib',
-        'setuptools',
-        'StringIO',
-        'zipfile',
     ],
     license='MPL2.0',
     project_urls={
