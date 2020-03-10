@@ -153,11 +153,11 @@ class OclExport(object):
         if concept_id:
             core_attrs['concept_id'] = concept_id
         if concept_uri:
-            core_attrs['url'] = concept_id
+            core_attrs['url'] = concept_uri
         if concept_class:
-            core_attrs['concept_class'] = concept_id
+            core_attrs['concept_class'] = concept_class
         if datatype:
-            core_attrs['datatype'] = concept_id
+            core_attrs['datatype'] = datatype
 
         # Return matching concepts
         concepts = []
@@ -165,12 +165,15 @@ class OclExport(object):
             is_match = True
             if core_attrs:
                 for core_attr_key in core_attrs:
-                    if core_attr_key not in concept or concept[core_attr_key] != core_attrs[core_attr_key]:
+                    if (core_attr_key not in concept or
+                            concept[core_attr_key] != core_attrs[core_attr_key]):
                         is_match = False
                         break
             if custom_attrs and is_match:
                 for custom_attr_key in custom_attrs:
-                    if 'extras' not in concept or not concept['extras'] or custom_attr_key not in concept['extras'] or concept['extras'][custom_attr_key] != custom_attrs[custom_attr_key]:
+                    if ('extras' not in concept or not concept['extras'] or
+                            custom_attr_key not in concept['extras'] or
+                            concept['extras'][custom_attr_key] != custom_attrs[custom_attr_key]):
                         is_match = False
                         break
             if is_match:
@@ -182,9 +185,9 @@ class OclExport(object):
         """ Get list of mappings in the export matching the specified search criteria """
         mappings = []
         for mapping in self._export_json['mappings']:
-            if (mapping['from_concept_url'] == from_concept_uri or not from_concept_uri) and \
-                (mapping['to_concept_url'] == to_concept_uri or not to_concept_uri) and \
-                (mapping['map_type'] == map_type or not map_type):
+            if (mapping['from_concept_url'] == from_concept_uri or not from_concept_uri and
+                    mapping['to_concept_url'] == to_concept_uri or not to_concept_uri and
+                    mapping['map_type'] == map_type or not map_type):
                 mappings.append(mapping)
         return mappings
 
