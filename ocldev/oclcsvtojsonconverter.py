@@ -298,7 +298,7 @@ class OclCsvToJsonConverter(object):
                                '"to_concept_url": %s' % ocl_resource['to_concept_url'])
                     raise Exception(err_msg)
                 ocl_resource['to_source_url'] = OclCsvToJsonConverter._get_external_mapping_to_source_url(
-                    to_source_url=ocl_resource.pop('to_concept_url', ''),
+                    to_source_url=ocl_resource.pop('to_source_url', ''),
                     to_concept_owner_id=ocl_resource.pop('to_concept_owner_id', ''),
                     to_concept_owner_type=ocl_resource.pop(
                         'to_concept_owner_type',

@@ -479,7 +479,7 @@ class OclFlexImporter(object):
                 "default_locale", "supported_locales", "website", "extras", "external_id"
             ],
             "create_method": "POST",
-            "update_method": "POST",
+            "update_method": "PUT",
         },
         oclconstants.OclConstants.RESOURCE_TYPE_COLLECTION: {
             "id_field": "id",
