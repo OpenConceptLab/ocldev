@@ -109,6 +109,15 @@ class OclCsvResourceList(OclResourceList):
         """ Initialize the OclCsvResourceList instance """
         OclResourceList.__init__(self, resources=resources)
 
+    @staticmethod
+    def load_from_file(filename):
+        resource_list = []
+        with open(filename) as csvfile:
+            reader = csv.DictReader(csvfile)
+            for row in reader:
+                resource_list.append(row)
+        return OclCsvResourceList(resources=resource_list)
+
     def validate(self):
         """ Validate the resource list using the OclCsvValidator """
         oclvalidator.OclCsvValidator.validate(self)
@@ -131,6 +140,14 @@ class OclJsonResourceList(OclResourceList):
     def __init__(self, resources=None):
         """ Initialize the OclJsonResourceList instance """
         OclResourceList.__init__(self, resources=resources)
+
+    @staticmethod
+    def load_from_file(filename):
+        resource_list = []
+        with open(filename) as jsonfile:
+            for line in jsonfile:
+                resource_list.append(json.loads(line))
+        return OclJsonResourceList(resources=resource_list)
 
     def validate(self):
         """ Validate the resource list using the OclCsvValidator """

@@ -790,11 +790,11 @@ class OclFlexImporter(object):
 
         return False
 
-
-    def process_reference_object(self, obj, batch_size=DEFAULT_REFERENCE_BATCH_SIZE):
-        """ Split list of references into batches and process """
+    @staticmethod
+    def batch_reference_object(reference_resource, batch_size=1000):
+        """ Split list of references into batches """
         obj_type = oclconstants.OclConstants.RESOURCE_TYPE_REFERENCE
-        base_obj = obj.copy()
+        base_obj = reference_resource.copy()
         base_obj_data = base_obj.pop('data')
         if not batch_size:
             batch_size = len(base_obj_data['expressions'])
@@ -802,17 +802,25 @@ class OclFlexImporter(object):
         expressions_chunked = [
             expressions_raw[i * batch_size:(i + 1) * batch_size] for i in range(
                 (len(expressions_raw) + batch_size - 1) // batch_size)]
-        if len(expressions_chunked) > 1:
-            message = ('INFO: New reference request with %s expressions automatically '
-                       'split into %s batches of %s expressions or less') % (
-                           str(len(expressions_raw)), str(len(expressions_chunked)),
-                           str(batch_size))
-            self.log(message)
+        new_resources = []
         for chunk in expressions_chunked:
             new_obj = base_obj.copy()
             new_obj['data'] = {'expressions': chunk}
-            self.process_object(obj_type, new_obj)
+            new_resources.append(new_obj)
+        return new_resources
 
+    def process_reference_object(self, obj, batch_size=DEFAULT_REFERENCE_BATCH_SIZE):
+        """ Split list of references into batches and process """
+        batched_resources = OclFlexImporter.batch_reference_object(obj)
+        if len(batched_resources) > 1:
+            message = ('INFO: New reference request with %s expressions automatically '
+                       'split into %s batches of %s expressions or less') % (
+                           str(len(obj['data']['expressions'])),
+                           str(len(batched_resources)),
+                           str(len(batched_resources[0]['data']['expressions'])))
+            self.log(message)
+        for batched_resource in batched_resources:
+            self.process_object(obj_type, new_obj)
 
     def process_object(self, obj_type, obj):
         """ Processes an individual document in the import file """
