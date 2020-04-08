@@ -11,3 +11,4 @@ Three main classes (and several supporting classes) are implemented currently:
 * OclImportResults - Used to process the results of an import
 * OclExport & OclExportFactory - Used to fetch exports from OCL
 * OclCsvToJsonConverter - Used to convert CSV files to OCL-formatted JSON
+* OclValidator - Validates OCL-formatted JSON and CSV scripts
