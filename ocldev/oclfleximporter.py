@@ -465,7 +465,7 @@ class OclFlexImporter(object):
                 "public_access", "extras", "website"
             ],
             "create_method": "POST",
-            "update_method": "POST",
+            "update_method": "PUT",
         },
         oclconstants.OclConstants.RESOURCE_TYPE_SOURCE: {
             "id_field": "id",
