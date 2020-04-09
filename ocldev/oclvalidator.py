@@ -573,11 +573,9 @@ class OclCsvValidator(object):
             },
             "released": {
                 "description": "True if this source version is intended for use",
-                "type": "string"
             },
             "retired": {
                 "description": "True if use of this source version is discouraged",
-                "type": "string"
             },
         },
         "required": ["resource_type", "owner_id", "source", "id", "description"]
@@ -616,11 +614,9 @@ class OclCsvValidator(object):
             },
             "released": {
                 "description": "True if this collection version is intended for use",
-                "type": "string"
             },
             "retired": {
                 "description": "True if use of this collection version is discouraged",
-                "type": "string"
             },
         },
         "required": ["resource_type", "owner_id", "collection", "id", "description"]
