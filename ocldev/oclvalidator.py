@@ -139,7 +139,7 @@ class OclJsonValidator(object):
                 "type": "string"
             },
         },
-        "required": ["type", "owner_id", "source", "from_concept_url", "map_type"]
+        "required": ["type", "owner", "source", "from_concept_url", "map_type"]
     }
     VALIDATION_SCHEMA_REFERENCE = {}
     VALIDATION_SCHEMA_SOURCE_VERSION = {
@@ -176,11 +176,9 @@ class OclJsonValidator(object):
             },
             "released": {
                 "description": "True if this source version is intended for use",
-                "type": "string"
             },
             "retired": {
                 "description": "True if use of this source version is discouraged",
-                "type": "string"
             },
         },
         "required": ["type", "owner", "source", "id", "description"]
@@ -219,11 +217,9 @@ class OclJsonValidator(object):
             },
             "released": {
                 "description": "True if this collection version is intended for use",
-                "type": "string"
             },
             "retired": {
                 "description": "True if use of this collection version is discouraged",
-                "type": "string"
             },
         },
         "required": ["type", "owner", "collection", "id", "description"]
