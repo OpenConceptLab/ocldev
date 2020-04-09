@@ -19,6 +19,13 @@ class OclUnknownResourceError(OclError):
         self.msg = msg
 
 
+class OclExportNotAvailableError(OclError):
+    """ Error thrown when requesting an OCL export that is not available """
+    def __init__(self, expr, msg):
+        self.expr = expr
+        self.msg = msg
+
+
 class OclExportFactory(object):
     """ Factory class to create OclExport factory objects """
 
@@ -40,6 +47,9 @@ class OclExportFactory(object):
         repo_export_url = '%sexport/' % repo_version_url
         r = requests.get(repo_export_url, allow_redirects=True, headers=oclapiheaders)
         r.raise_for_status()
+        if r.status_code == 204:
+            raise OclExportNotAvailableError(
+                repo_export_url, 'Export at "%s" not available' % repo_export_url)
 
         # Decompress "export.json" from the zipfile in memory and return as a python dictionary
         repo_export = None
