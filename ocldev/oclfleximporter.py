@@ -687,11 +687,10 @@ class OclFlexImporter(object):
 
         return count
 
-
     def does_object_exist(self, obj_url, use_cache=True):
-        """ Returns whether an object at the specified URL already exists """
+        """ Returns whether a resource at the specified URL already exists """
 
-        # If obj existence cached, then just return True
+        # If resource existence cached, then just return True
         if use_cache and obj_url in self.cache_obj_exists and self.cache_obj_exists[obj_url]:
             return True
 
@@ -706,7 +705,6 @@ class OclFlexImporter(object):
             raise UnexpectedStatusCodeError(
                 "GET " + self.api_url_root + obj_url,
                 "Unexpected status code returned: " + str(request_existence.status_code))
-
 
     def does_mapping_exist(self, obj_url, obj):
         """
