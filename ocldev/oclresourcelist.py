@@ -1,6 +1,7 @@
 """ Classes to manage a list of OCL resources """
 import csv
 import sys
+import json
 import oclvalidator
 import oclcsvtojsonconverter
 
@@ -111,6 +112,7 @@ class OclCsvResourceList(OclResourceList):
 
     @staticmethod
     def load_from_file(filename):
+        """ Load resource list from CSV file """
         resource_list = []
         with open(filename) as csvfile:
             reader = csv.DictReader(csvfile)
@@ -143,6 +145,7 @@ class OclJsonResourceList(OclResourceList):
 
     @staticmethod
     def load_from_file(filename):
+        """ Load resource list from JSON file """
         resource_list = []
         with open(filename) as jsonfile:
             for line in jsonfile:
