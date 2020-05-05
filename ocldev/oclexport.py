@@ -192,12 +192,15 @@ class OclExport(object):
         return concepts
 
     def get_mappings(self, from_concept_uri='', to_concept_uri='', map_type=''):
-        """ Get list of mappings in the export matching the specified search criteria """
+        """
+        Get list of mappings in the export matching the specified filter criteria.
+        If no filter criteria are provided, all mappings are returned.
+        """
         mappings = []
         for mapping in self._export_json['mappings']:
-            if (mapping['from_concept_url'] == from_concept_uri or not from_concept_uri and
-                    mapping['to_concept_url'] == to_concept_uri or not to_concept_uri and
-                    mapping['map_type'] == map_type or not map_type):
+            if ((not from_concept_uri or mapping['from_concept_url'] == from_concept_uri) and
+                    (not to_concept_uri or mapping['to_concept_url'] == to_concept_uri) and
+                    (not map_type or mapping['map_type'] == map_type)):
                 mappings.append(mapping)
         return mappings
 
