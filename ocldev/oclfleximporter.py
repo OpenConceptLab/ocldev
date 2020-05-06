@@ -178,7 +178,13 @@ class OclImportResults(object):
         for root_key in self._results:
             for action_type in self._results[root_key]:
                 for status_code in self._results[root_key][action_type]:
-                    if int(status_code) >= 300:
+                    try:
+                        status_code_int = int(status_code)
+                    except:
+                        status_code_int = 0
+                    if status_code == 'skip':
+                        return True
+                    elif status_code_int and status_code_int >= 300:
                         return True
         return False
 
