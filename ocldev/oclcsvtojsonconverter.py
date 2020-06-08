@@ -4,6 +4,7 @@ Definitions. The resulting JSON is intended for the OclFlexImporter. See
 OclStandardCsvToJsonConverter.default_csv_resource_definitions in this file for examples.
 Note that resource_fields are required unless "required": False or a "default" is included.
 Next steps:
+- Bring handling of resource IDs into alignment with updated OCLAPI ID implementation
 - Implement support for: (1) Generic Auto Concept References, (2) Generic Standalone References
 - Implement import script validation
 """
@@ -250,7 +251,9 @@ class OclCsvToJsonConverter(object):
             id_column = csv_resource_def[self.DEF_KEY_ID_COLUMN]
             if id_column not in csv_row or not csv_row[id_column]:
                 raise Exception('ID column %s not set or empty in row %s' % (id_column, csv_row))
-            if ocl_resource_type == oclconstants.OclConstants.RESOURCE_TYPE_CONCEPT:
+            if ocl_resource_type in [
+                    oclconstants.OclConstants.RESOURCE_TYPE_CONCEPT,
+                    oclconstants.OclConstants.RESOURCE_TYPE_MAPPING]:
                 ocl_resource['id'] = self.format_identifier(
                     csv_row[id_column], allow_underscore=True)
             else:

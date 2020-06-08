@@ -5,6 +5,7 @@ import json
 import zipfile
 from StringIO import StringIO
 import requests
+import oclresourcelist
 
 
 class OclError(Exception):
@@ -118,6 +119,15 @@ class OclExport(object):
     def get_full_export(self):
         """ Return full contents of export as a python dictionary """
         return self._export_json
+
+    def to_resource_list():
+        """ Return all concepts and mappings as an OclJsonResourceList """
+        if not self._export_json:
+            return None
+        resource_list = oclresourcelist.OclJsonResourceList()
+        resource_list.append(self._concepts)
+        resource_list.append(self._mappings)
+        return resource_list
 
     def set_export(self, export_json=None, ocl_export=None):
         """
