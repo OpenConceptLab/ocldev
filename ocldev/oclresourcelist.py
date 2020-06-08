@@ -2,6 +2,7 @@
 import csv
 import sys
 import json
+import oclconstants
 import oclvalidator
 import oclcsvtojsonconverter
 
@@ -18,6 +19,8 @@ class OclResourceList(object):
 
     def load_resources(self, resources):
         """ Load resource list """
+        if not isinstance(resources, list):
+            raise TypeError('Invalid type. List required.')
         self._resources = resources
 
     def __iter__(self):
@@ -46,7 +49,7 @@ class OclResourceList(object):
         return True
 
     def __ne__(self, other):
-        """ Return whether the two objects have different same resource lists """
+        """ Return whether the two objects have different resource lists """
         return not self.__eq__(other)
 
     def next(self):
@@ -78,7 +81,7 @@ class OclResourceList(object):
         return list(self._resources)
 
     def convert_to_ocl_formatted_json(self):
-        """ Get the resource list as an OclJsonResourceList with OCL-formatted JSON """
+        """ Convert a CSV-formatted resource list as an OclJsonResourceList """
         csv_converter = oclcsvtojsonconverter.OclStandardCsvToJsonConverter(input_list=self)
         return OclJsonResourceList(csv_converter.process())
 
@@ -101,6 +104,78 @@ class OclResourceList(object):
                 if key not in columns:
                     columns.append(key)
         return columns
+
+    def _get_resources(self, core_attrs=None, custom_attrs=None, do_return_first=False,
+                       do_return_index=False):
+        """
+        Get list of resources matching all of the specified attributes.  Any core or custom
+        attribute may be passed using the core_attrs and custom_attrs dictionaries.
+        """
+
+        # Move explicit filters into the core attributes dictionary
+        # if not core_attrs:
+        #     core_attrs = {}
+        # if resource_type:
+        #     core_attrs['type'] = resource_type
+        # if resource_id:
+        #     core_attrs['id'] = resource_id
+        # if resource_url:
+        #     core_attrs['url'] = resource_url
+
+        # Return matching resources
+        resources = []
+        current_index = 0
+        for resource in self._resources:
+            is_match = True
+            if core_attrs:
+                for core_attr_key in core_attrs:
+                    if (core_attr_key not in resource or
+                            resource[core_attr_key] != core_attrs[core_attr_key]):
+                        is_match = False
+                        break
+            if custom_attrs and is_match:
+                for custom_attr_key in custom_attrs:
+                    if ('extras' not in resource or not resource['extras'] or
+                            custom_attr_key not in resource['extras'] or
+                            resource['extras'][custom_attr_key] != custom_attrs[custom_attr_key]):
+                        is_match = False
+                        break
+            if is_match:
+                if do_return_first:
+                    return resource if not do_return_index else current_index
+                resources.append(resource if not do_return_index else current_index)
+            current_index += 1
+        return resources if not do_return_index else resources
+
+    def get_resources(self, core_attrs=None, custom_attrs=None):
+        """
+        Get list of resources matching all of the specified attributes.  Any core or custom
+        attribute may be passed using the core_attrs and custom_attrs dictionaries.
+        """
+        result = self._get_resources(core_attrs=core_attrs, custom_attrs=custom_attrs)
+        if result:
+            return OclResourceList(result)
+        return None
+
+    def get_resource(self, core_attrs=None, custom_attrs=None):
+        """ Returns first matching resource """
+        result = self._get_resources(
+            core_attrs=core_attrs, custom_attrs=custom_attrs, do_return_first=True)
+        if result:
+            return result
+        return None
+
+    def get_index(self, core_attrs=None, custom_attrs=None):
+        """ Returns 0-based index of first matching resource. Returns -1 if no match. """
+        result = self._get_resources(
+            core_attrs=core_attrs, custom_attrs=custom_attrs,
+            do_return_index=True, do_return_first=True)
+        if isinstance(result, int):
+            return result
+        return -1
+
+    def pop(self, resource_index):
+        return self._resources.pop(resource_index)
 
 
 class OclCsvResourceList(OclResourceList):
