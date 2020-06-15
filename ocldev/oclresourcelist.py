@@ -257,6 +257,32 @@ class OclResourceList(object):
                 return resource
         return None
 
+    def get_concept_name_by_url(self, resource_url, name_type):
+        """
+        Get concept name by name_type or return None. Concept is identified by the provided
+        resource URL. If name_type is a list, name_types are processed in the order specified.
+        """
+        return OclResourceList.get_concept_name_by_type(
+            self.get_resource_by_url(resource_url), name_type)
+
+    @staticmethod
+    def get_concept_name_by_type(concept, name_type):
+        """
+        Get concept name by name_type or return None. If name_type is a list, name_types are
+        processed in the order specified.
+        """
+        if not concept or 'names' not in concept:
+            return None
+        if isinstance(name_type, str):
+            name_type = [name_type]
+        if not isinstance(name_type, list):
+            raise TypeError("Invalid name_type argument '%s'. Expected string or list." % type(name_type))
+        for current_name_type in name_type:
+            for concept_name in concept['names']:
+                if 'name_type' in concept_name and concept_name['name_type'] == current_name_type:
+                    return concept_name['name']
+        return None
+
 
 class OclCsvResourceList(OclResourceList):
     """ Generic class to manage a list of OCL resources """
