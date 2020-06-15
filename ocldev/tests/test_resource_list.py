@@ -91,6 +91,7 @@ def test_add_two_resources_lists():
     assert type(expected_list_c) == type(resource_list_a)
     assert type(expected_list_d) == type(resource_list_a)
 
+
 def test_display_resource_list_as_csv():
     resource_a = {
         'resource_type': 'Concept',
@@ -112,3 +113,19 @@ def test_display_resource_list_as_csv():
     resource_list.display_as_csv()
     # Just testing that this does not fail for some reason
     assert True == True
+
+
+def test_load_from_file():
+    filename = 'sample.csv'
+    resource_list = ocldev.oclresourcelist.OclCsvResourceList.load_from_file(filename)
+    assert len(resource_list) == 66
+
+
+def test_summarize():
+    filename = 'sample.csv'
+    csv_resources = ocldev.oclresourcelist.OclCsvResourceList.load_from_file(filename)
+    json_resources = csv_resources.convert_to_ocl_formatted_json()
+    csv_resource_type_summary = csv_resources.summarize(core_attr_key='resource_type')
+    json_reporting_frequency_summary = json_resources.summarize(custom_attr_key='Reporting frequency')
+    assert csv_resource_type_summary == {'Organization': 1, 'Source Version': 1, 'Concept': 59, 'n/a': 4, 'Source': 1}
+    assert json_reporting_frequency_summary == {'Quarterly': 3, None: 128}

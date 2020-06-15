@@ -120,6 +120,8 @@ class OclConstants(object):
                          repository_type=RESOURCE_TYPE_SOURCE,
                          resource_type=RESOURCE_TYPE_CONCEPT):
         """ Returns relative URL for a resource (eg concept or mapping) """
+        if not resource_id:
+            return ''
         repo_url = OclConstants.get_repository_url(
             owner_id=owner_id, repository_id=repository_id,
             owner_type=owner_type, repository_type=repository_type)

@@ -40,7 +40,7 @@ class OclResourceList(object):
         return OclResourceList(_output_resources)
 
     def __eq__(self, other):
-        """ Return whether the two objects have the same resource lists """
+        """ Return whether the two objects are equal, i.e. have the same resource lists """
         if len(self) != len(other):
             return False
         for i in range(len(self)):
@@ -104,6 +104,30 @@ class OclResourceList(object):
                 if key not in columns:
                     columns.append(key)
         return columns
+
+    def summarize(self, core_attr_key='', custom_attr_key=''):
+        """
+        Return a dictionary summarizing the number of occurrences of each value for the specified
+        custom attribute key. Only one attribute key may be provided.
+        """
+        summary = {}
+        for resource in self._resources:
+            if core_attr_key:
+                if core_attr_key in resource:
+                    attr_value = resource[core_attr_key]
+                else:
+                    attr_value = None
+            elif custom_attr_key:
+                if 'extras' in resource and custom_attr_key in resource['extras']:
+                    attr_value = resource['extras'][custom_attr_key]
+                else:
+                    attr_value = None
+            else:
+                attr_value = None
+            if attr_value not in summary:
+                summary[attr_value] = 0
+            summary[attr_value] += 1
+        return summary
 
     def _get_resources(self, core_attrs=None, custom_attrs=None, do_return_first=False,
                        do_return_index=False):
@@ -176,6 +200,62 @@ class OclResourceList(object):
 
     def pop(self, resource_index):
         return self._resources.pop(resource_index)
+
+    @staticmethod
+    def get_resource_url(resource, include_trailing_slash=True):
+        """
+        Return URL of a resource. If URL is specified explicitly as a URL field, that is returned.
+        Otherwise, it attempts to build a URL using inline attributes. For JSON resources, this
+        includes: type, owner_id, owner_type, source_id, and id. For CSV resources, this includes:
+        resource_type, owner, owner_type, source, and id.
+        """
+        if 'url' in resource and resource['url']:
+            return resource['url']
+        resource_type = resource.get('type') or resource.get('resource_type')
+        url = None
+        if (resource_type == oclconstants.OclConstants.RESOURCE_TYPE_CONCEPT or
+                resource_type == oclconstants.OclConstants.RESOURCE_TYPE_MAPPING):
+                url = oclconstants.OclConstants.get_resource_url(
+                    owner_id=resource.get('owner') or resource.get('owner_id'),
+                    owner_type=resource.get('owner_type') or oclconstants.OclConstants.RESOURCE_TYPE_ORGANIZATION,
+                    repository_id=resource.get('source') or resource.get('source_id'),
+                    repository_type=oclconstants.OclConstants.RESOURCE_TYPE_SOURCE,
+                    resource_type=resource_type,
+                    resource_id=resource.get('id'),
+                    include_trailing_slash=include_trailing_slash)
+        elif (resource_type == oclconstants.OclConstants.RESOURCE_TYPE_SOURCE or
+                resource_type == oclconstants.OclConstants.RESOURCE_TYPE_COLLECTION):
+            url = oclconstants.OclConstants.get_repository_url(
+                owner_id=resource.get('owner') or resource.get('owner_id'),
+                owner_type=resource.get('owner_type') or oclconstants.OclConstants.RESOURCE_TYPE_ORGANIZATION,
+                repository_id=resource.get('id'),
+                repository_type=resource_type,
+                include_trailing_slash=include_trailing_slash)
+        elif (resource_type == oclconstants.OclConstants.RESOURCE_TYPE_ORGANIZATION or
+                resource_type == oclconstants.OclConstants.RESOURCE_TYPE_USER):
+            url = oclconstants.OclConstants.get_owner_url(
+                owner_id=resource.get('id'),
+                owner_type=resource_type,
+                include_trailing_slash=include_trailing_slash)
+        if url:
+            return url
+        return None
+
+    def get_resource_by_url(self, url):
+        """ Return the first resource that matches the specified URL. """
+        if isinstance(url, basestring) and url:
+            url_needle = url.strip()
+        else:
+            return None
+        if url_needle[len(url_needle) - 1] != '/':
+            url_needle += '/'
+        for resource in self._resources:
+            resource_url = OclResourceList.get_resource_url(resource)
+            if resource_url and resource_url[len(resource_url) - 1] != '/':
+                url_needle += '/'
+            if resource_url == url_needle:
+                return resource
+        return None
 
 
 class OclCsvResourceList(OclResourceList):
