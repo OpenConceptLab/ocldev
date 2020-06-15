@@ -12,16 +12,11 @@ class OclResourceList(object):
 
     def __init__(self, resources=None):
         """ Initialize the OclResourceList instance """
+        self._urls = []
         self._resources = []
         self._current_iter = 0
         if resources:
-            self.load_resources(resources)
-
-    def load_resources(self, resources):
-        """ Load resource list """
-        if not isinstance(resources, list):
-            raise TypeError('Invalid type. List required.')
-        self._resources = resources
+            self.append(resources)
 
     def __iter__(self):
         """ Iterator for the OclResourceList class """
@@ -60,6 +55,15 @@ class OclResourceList(object):
             self._current_iter += 1
             return self._resources[self._current_iter - 1]
 
+    def refresh_index(self):
+        """
+        Refresh the URL index. This is required if resource ID and URL-related fields are edited
+        outside of this object
+        """
+        self._urls = []
+        for resource in self._resources:
+            self._urls.append(OclResourceList.get_resource_url(resource))
+
     def append(self, resources):
         """ Add one resource or a list of resources to the list """
         if not isinstance(resources, list):
@@ -67,6 +71,7 @@ class OclResourceList(object):
         for resource in resources:
             if not isinstance(resource, dict):
                 raise TypeError("Cannot append resource of type '%s'" % type(resource))
+            self._urls.append(OclResourceList.get_resource_url(resource))
             self._resources.append(resource)
 
     def __getitem__(self, index):
@@ -75,8 +80,14 @@ class OclResourceList(object):
 
     def to_json(self):
         """
-        Return JSON representation of the resource list, which is simply a copy of
+        DEPRECATED: Return JSON representation of the resource list, which is simply a copy of
         the resources in this list.
+        """
+        return list(self._resources)
+
+    def to_list(self):
+        """
+        Return a (shallow) copy of all resources as a simple python list.
         """
         return list(self._resources)
 
@@ -135,18 +146,6 @@ class OclResourceList(object):
         Get list of resources matching all of the specified attributes.  Any core or custom
         attribute may be passed using the core_attrs and custom_attrs dictionaries.
         """
-
-        # Move explicit filters into the core attributes dictionary
-        # if not core_attrs:
-        #     core_attrs = {}
-        # if resource_type:
-        #     core_attrs['type'] = resource_type
-        # if resource_id:
-        #     core_attrs['id'] = resource_id
-        # if resource_url:
-        #     core_attrs['url'] = resource_url
-
-        # Return matching resources
         resources = []
         current_index = 0
         for resource in self._resources:
@@ -199,6 +198,8 @@ class OclResourceList(object):
         return -1
 
     def pop(self, resource_index):
+        """ Remove and return a resource at the specified index """
+        self._urls.pop(resource_index)
         return self._resources.pop(resource_index)
 
     @staticmethod
@@ -207,9 +208,14 @@ class OclResourceList(object):
         Return URL of a resource. If URL is specified explicitly as a URL field, that is returned.
         Otherwise, it attempts to build a URL using inline attributes. For JSON resources, this
         includes: type, owner_id, owner_type, source_id, and id. For CSV resources, this includes:
-        resource_type, owner, owner_type, source, and id.
+        resource_type, owner, owner_type, source, and id. Returns None if unable to generate URL.
+        Currently supports Concepts, Mappings, Sources, Collections, Owners, and Users.
         """
         if 'url' in resource and resource['url']:
+            if include_trailing_slash and resource['url'][len(resource['url']) - 1] != '/':
+                return '%s/' % resource['url']
+            elif not include_trailing_slash and resource['url'][len(resource['url']) - 1] == '/':
+                return resource['url'][:-1]
             return resource['url']
         resource_type = resource.get('type') or resource.get('resource_type')
         url = None
@@ -249,12 +255,8 @@ class OclResourceList(object):
             return None
         if url_needle[len(url_needle) - 1] != '/':
             url_needle += '/'
-        for resource in self._resources:
-            resource_url = OclResourceList.get_resource_url(resource)
-            if resource_url and resource_url[len(resource_url) - 1] != '/':
-                url_needle += '/'
-            if resource_url == url_needle:
-                return resource
+        if url_needle in self._urls:
+            return self._resources[self._urls.index(url_needle)]
         return None
 
     def get_concept_name_by_url(self, resource_url, name_type):
