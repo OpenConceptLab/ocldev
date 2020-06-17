@@ -51,6 +51,13 @@ class OclResourceList(object):
         """ Return whether the two objects have different resource lists """
         return not self.__eq__(other)
 
+    def chunk(self, chunk_size):
+        chunked_lists = [self._resources[i:i + chunk_size] for i in xrange(0, len(self._resources), chunk_size)]
+        chunked_resource_lists = []
+        for chunked_list in chunked_lists:
+            chunked_resource_lists.append(OclResourceList(chunked_list))
+        return chunked_resource_lists
+
     def next(self):
         """ Get the next item in the list """
         if self._current_iter >= len(self._resources):
