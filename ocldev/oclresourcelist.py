@@ -31,8 +31,12 @@ class OclResourceList(object):
         """ Add two resource lists together """
         _output_resources = list(self._resources)
         for resource in new_resources:
-            _output_resources.append(resource.copy())
+            _output_resources.append(resource)
         return OclResourceList(_output_resources)
+
+    def __iadd__(self, new_resources):
+        self.append(new_resources)
+        return self
 
     def __eq__(self, other):
         """ Return whether the two objects are equal, i.e. have the same resource lists """
@@ -65,14 +69,20 @@ class OclResourceList(object):
             self._urls.append(OclResourceList.get_resource_url(resource))
 
     def append(self, resources):
-        """ Add one resource or a list of resources to the list """
-        if not isinstance(resources, list):
+        """
+        Add one resource or a list of resources to this object
+        :param resources: <dict>, <list>, <OclResourceList>
+        """
+        if isinstance(resources, dict):
             resources = [resources]
-        for resource in resources:
-            if not isinstance(resource, dict):
-                raise TypeError("Cannot append resource of type '%s'" % type(resource))
-            self._urls.append(OclResourceList.get_resource_url(resource))
-            self._resources.append(resource)
+        if isinstance(resources, list) or isinstance(resources, OclResourceList):
+            for resource in resources:
+                if not isinstance(resource, dict):
+                    raise TypeError("Cannot append resource of type '%s'" % type(resource))
+                self._urls.append(OclResourceList.get_resource_url(resource))
+                self._resources.append(resource)
+        else:
+            raise TypeError("Cannot append resource of type '%s'" % type(resources))
 
     def __getitem__(self, index):
         """ Get an item from the list """
