@@ -3,6 +3,6 @@ Base class for the ocldev package
 """
 
 
-class OclBase:
+class OclBase(object):
     """ Base class for the ocldev package """
     pass
