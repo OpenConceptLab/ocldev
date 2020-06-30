@@ -1,5 +1,5 @@
 """
-Objects to work with OCL's export API
+Objects to work with OCL's export api
 """
 import json
 import zipfile
@@ -120,7 +120,7 @@ class OclExport(object):
         """ Return full contents of export as a python dictionary """
         return self._export_json
 
-    def to_resource_list():
+    def to_resource_list(self):
         """ Return all concepts and mappings as an OclJsonResourceList """
         if not self._export_json:
             return None

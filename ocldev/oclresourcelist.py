@@ -52,6 +52,10 @@ class OclResourceList(object):
         return not self.__eq__(other)
 
     def chunk(self, chunk_size):
+        """
+        Return the OclResourceList as a list of OclResourceList objects with maximum
+        size of chunk_size.
+        """
         chunked_lists = [self._resources[i:i + chunk_size] for i in xrange(0, len(self._resources), chunk_size)]
         chunked_resource_lists = []
         for chunked_list in chunked_lists:
