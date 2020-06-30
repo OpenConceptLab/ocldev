@@ -600,7 +600,7 @@ class OclFlexImporter(object):
             "has_collection": True,
             "allowed_fields": ["data"],
             OBJ_DEF_ATTR_HTTP_IMPORT_METHOD: {
-                ACTION_TYPE_CREATE: HTTP_METHOD_POST,
+                ACTION_TYPE_CREATE: HTTP_METHOD_PUT,
                 ACTION_TYPE_UPDATE: None,
                 ACTION_TYPE_DELETE: HTTP_METHOD_DELETE
             }
