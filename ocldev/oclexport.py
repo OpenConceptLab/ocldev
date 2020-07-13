@@ -145,22 +145,50 @@ class OclExport(object):
         self._concepts = self._export_json['concepts']
         self._mappings = self._export_json['mappings']
 
-    def get_concept_by_id(self, concept_id):
+    def _add_mappings_to_concept(self, concept, include_mappings=True, include_inverse_mappings=True):
+        """ Adds mappings from this export to a copy of the provided concept """
+        return_concept = concept.copy()
+        return_concept['mappings'] = []
+        concept_uri = concept['url']
+        for mapping in self._mappings:
+            if include_mappings and mapping['from_concept_url'] == concept_uri:
+                return_concept['mappings'].append(mapping)
+            if include_inverse_mappings and mapping['to_concept_url'] == concept_uri:
+                return_concept['mappings'].append(mapping)
+        return return_concept        
+
+    def get_concept_by_index(self, index, include_mappings=False, include_inverse_mappings=False):
+        if not include_mappings and not include_inverse_mappings:
+            return self._concepts[index]
+        return self._add_mappings_to_concept(
+            self._concepts[index], include_mappings=include_mappings,
+            include_inverse_mappings=include_inverse_mappings)
+
+    def get_concept_by_id(self, concept_id, include_mappings=False, include_inverse_mappings=False):
         """ Returns the first concept that matches the specified ID, otherwise returns None """
         for concept in self._concepts:
             if concept['id'] == concept_id:
-                return concept
+                if not include_mappings and not include_inverse_mappings:
+                    return concept
+                return self._add_mappings_to_concept(
+                    concept, include_mappings=include_mappings,
+                    include_inverse_mappings=include_inverse_mappings)
         return None
 
-    def get_concept_by_uri(self, concept_uri):
+    def get_concept_by_uri(self, concept_uri, include_mappings=False, include_inverse_mappings=False):
         """ Returns the first concept that matches the specified URL, otherwise returns None """
         for concept in self._concepts:
             if concept['url'] == concept_uri:
-                return concept
+                if not include_mappings and not include_inverse_mappings:
+                    return concept
+                return self._add_mappings_to_concept(
+                    concept, include_mappings=include_mappings,
+                    include_inverse_mappings=include_inverse_mappings)
         return None
 
     def get_concepts(self, concept_id='', concept_uri='', concept_class='', datatype='',
-                     core_attrs=None, custom_attrs=None):
+                     core_attrs=None, custom_attrs=None,
+                     include_mappings=False, include_inverse_mappings=False):
         """
         Get list of concepts matching all of the specified attributes. While concept ID, URI,
         class, and may be explicitly passed as arguments, any core or custom attribute may be
@@ -197,7 +225,12 @@ class OclExport(object):
                         is_match = False
                         break
             if is_match:
-                concepts.append(concept)
+                if not include_mappings and not include_inverse_mappings:
+                    concepts.append(concept)
+                else:
+                    concepts.append(self._add_mappings_to_concept(
+                        concept, include_mappings=include_mappings,
+                        include_inverse_mappings=include_inverse_mappings))
 
         return concepts
 
