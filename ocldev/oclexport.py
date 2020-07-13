@@ -1,5 +1,37 @@
 """
 Objects to work with OCL's export api
+
+Example Code:
+import pprint
+import ocldev.oclexport
+
+# Load export from OCL server
+repo_url = 'https://api.staging.openconceptlab.org/orgs/CIEL/sources/CIEL/'
+my_ocl_api_token = ''
+export = oclexport.OclExportFactory.load_latest_export(
+    repo_url=repo_url, oclapitoken=my_ocl_api_token)
+
+# Load export from JSON file
+export_filename = 'my-export.json'
+export = oclexport.OclExportFactory.load_export(
+    repo_version_url=repo_version_url, oclapitoken=my_ocl_api_token)
+
+# Get concepts from export that include mappings
+concept_a = export.get_concept_by_index(
+    939, include_mappings=True, include_inverse_mappings=True)
+concept_b = export.get_concept_by_id(
+    '163817', include_mappings=True, include_inverse_mappings=True)
+concept_c = export.get_concept_by_uri(
+    '/orgs/CIEL/sources/CIEL/concepts/163817/', include_mappings=True,
+    include_inverse_mappings=True)
+concept_list = export.get_concepts(
+    core_attrs={'retired': True, 'concept_class': 'Symptom'},
+    include_mappings=True, include_inverse_mappings=True)
+
+pprint.pprint(concept_a)
+pprint.pprint(concept_b)
+pprint.pprint(concept_c)
+pprint.pprint(concept_list)
 """
 import json
 import zipfile
@@ -28,7 +60,7 @@ class OclExportNotAvailableError(OclError):
 
 
 class OclExportFactory(object):
-    """ Factory class to create OclExport factory objects """
+    """ Factory class to create OclExport factory objects """   
 
     @staticmethod
     def load_export(repo_version_url='', oclapitoken=''):
