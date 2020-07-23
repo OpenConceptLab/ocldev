@@ -32,13 +32,27 @@ class OclConstants(object):
         RESOURCE_TYPE_COLLECTION_VERSION,
     ]
 
-    # Mapping descriptors
+    # Mapping target descriptors
     MAPPING_TARGET_INTERNAL = 'Internal'
     MAPPING_TARGET_EXTERNAL = 'External'
     MAPPING_TARGETS = [
         MAPPING_TARGET_INTERNAL,
         MAPPING_TARGET_EXTERNAL,
     ]
+
+    # Mapping fields
+    MAPPING_TARGET  = 'map_target'
+    MAPPING_FROM_CONCEPT_URL = 'from_concept_url'
+    MAPPING_FROM_CONCEPT_OWNER_ID = 'from_concept_owner_id'
+    MAPPING_FROM_CONCEPT_OWNER_TYPE = 'from_concept_owner_type'
+    MAPPING_FROM_CONCEPT_ID = 'from_concept_code'
+    MAPPING_FROM_SOURCE_ID = 'from_concept_source'
+    MAPPING_TO_CONCEPT_URL = 'to_concept_url'
+    MAPPING_TO_CONCEPT_OWNER_ID = 'to_concept_owner_id'
+    MAPPING_TO_CONCEPT_OWNER_TYPE = 'to_concept_owner_type'
+    MAPPING_TO_CONCEPT_ID = 'to_concept_code'
+    MAPPING_TO_SOURCE_ID = 'to_concept_source'
+    MAPPING_TO_SOURCE_URL = 'to_source_url'
 
     # API endpoint stems for owners
     OWNER_STEM_USERS = 'users'

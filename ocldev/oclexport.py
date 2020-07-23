@@ -1,5 +1,5 @@
 """
-Objects to work with OCL's export api
+Objects to work with OCL's export API
 
 Example Code:
 import pprint
