@@ -394,7 +394,7 @@ class OclBulkImporter(object):
         # Process the import
         url = '%s%s' % (api_url_root, OclBulkImporter.OCL_BULK_IMPORT_API_ENDPOINT)
         if queue:
-            url += '%s/' % urllib.urlencode(queue)
+            url += '%s/' % queue
         api_headers = {'Authorization': 'Token ' + api_token}
         import_response = requests.post(url, headers=api_headers, data=post_data)
         # import_response.raise_for_status()
