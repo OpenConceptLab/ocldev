@@ -651,8 +651,23 @@ class OclFlexImporter(object):
 
     def __init__(self, file_path='', input_list=None, api_url_root='', api_token='', limit=0,
                  test_mode=False, verbosity=1, do_update_if_exists=False, import_delay=0,
-                 reference_batch_size=DEFAULT_REFERENCE_BATCH_SIZE):
-        """ Initialize this object """
+                 reference_batch_size=DEFAULT_REFERENCE_BATCH_SIZE, update_progress=None):
+        """
+        Initialize this object
+
+        :param file_path:
+        :param input_list:
+        :param api_url_root:
+        :param api_token:
+        :param limit:
+        :param test_mode:
+        :param verbosity:
+        :param do_update_if_exists:
+        :param import_delay:
+        :param reference_batch_size:
+        :param update_progress: function(str) to call when progress changes
+        """
+
         self.input_list = input_list
         self.file_path = file_path
         if file_path:
@@ -668,6 +683,7 @@ class OclFlexImporter(object):
         self.reference_batch_size = reference_batch_size
         self.import_results = None
         self._cache_obj_exists = {}
+        self.update_progress = update_progress
 
         # Prepare the headers
         self.api_headers = {
@@ -703,6 +719,12 @@ class OclFlexImporter(object):
             for json_line_raw in json_file:
                 self.input_list.append(json.loads(json_line_raw))
 
+    def report_progress(self):
+        if self.update_progress:
+            self.update_progress("%s of %s" % (
+                self.import_results.count,
+                self.import_results.total_lines))
+
     def process(self):
         """
         Import a list of OCL-formatted JSON resources using the OCL API
@@ -723,6 +745,7 @@ class OclFlexImporter(object):
 
         # Loop through each JSON object
         self.import_results = OclImportResults(total_lines=total_lines)
+        self.report_progress()
         obj_def_keys = self.obj_def.keys()
         count = 0
         num_processed = 0
@@ -763,6 +786,7 @@ class OclFlexImporter(object):
                 num_skipped += 1
 
             self.log('[%s]' % self.import_results.get_detailed_summary())
+            self.report_progress()
 
             # Optionally delay before processing next row
             if self.import_delay and not self.test_mode:
