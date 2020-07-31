@@ -368,13 +368,15 @@ class OclBulkImporter(object):
     ]
 
     @staticmethod
-    def post(file_path='', input_list=None, api_url_root='', api_token='', test_mode=False):
+    def post(file_path='', input_list=None, api_url_root='', api_token='', queue='',
+             test_mode=False):
         """
         Post the import to the OCL bulk import API endpoint and return the request object
         :param file_path: Full path to a file to import
         :param input_list: Python list of JSON dictionaries to import
         :param api_url_root: e.g. https://api.openconceptlab.org
         :param api_token: OCL API token for the user account that will run the import
+        :param queue: Optional bulk import queue key
         :param test_mode: Set to True to simulate the import
         """
 
@@ -390,7 +392,9 @@ class OclBulkImporter(object):
             post_data = file_handle.read()
 
         # Process the import
-        url = api_url_root + OclBulkImporter.OCL_BULK_IMPORT_API_ENDPOINT
+        url = '%s%s' % (api_url_root, OclBulkImporter.OCL_BULK_IMPORT_API_ENDPOINT)
+        if queue:
+            url += '%s/' % urllib.urlencode(queue)
         api_headers = {'Authorization': 'Token ' + api_token}
         import_response = requests.post(url, headers=api_headers, data=post_data)
         # import_response.raise_for_status()
