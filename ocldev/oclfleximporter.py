@@ -759,6 +759,7 @@ class OclFlexImporter(object):
                 self.input_list.append(json.loads(json_line_raw))
 
     def report_progress(self):
+        """ Save current progress string to instance """
         if self.update_progress:
             self.update_progress("%s of %s" % (
                 self.import_results.count,
@@ -954,7 +955,7 @@ class OclFlexImporter(object):
 
     def process_reference_object(self, obj, batch_size=DEFAULT_REFERENCE_BATCH_SIZE):
         """ Process list of references, optionally splitting into batches """
-        batched_resources = OclFlexImporter.batch_reference_object(obj)
+        batched_resources = OclFlexImporter.batch_reference_object(obj, batch_size=batch_size)
         if len(batched_resources) > 1:
             message = ('INFO: New reference request with %s expressions automatically '
                        'split into %s batches of %s expressions or less') % (
@@ -963,7 +964,8 @@ class OclFlexImporter(object):
                            str(len(batched_resources[0]['data']['expressions'])))
             self.log(message)
         for batched_resource in batched_resources:
-            self.process_object(obj_type, new_obj)
+            self.process_object(
+                oclconstants.OclConstants.RESOURCE_TYPE_REFERENCE, batched_resource)
 
     def process_object(self, obj_type, obj):
         """ Processes an individual object in the import file """

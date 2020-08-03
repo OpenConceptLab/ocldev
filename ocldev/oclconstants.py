@@ -41,7 +41,7 @@ class OclConstants(object):
     ]
 
     # Mapping fields
-    MAPPING_TARGET  = 'map_target'
+    MAPPING_TARGET = 'map_target'
     MAPPING_FROM_CONCEPT_URL = 'from_concept_url'
     MAPPING_FROM_CONCEPT_OWNER_ID = 'from_concept_owner_id'
     MAPPING_FROM_CONCEPT_OWNER_TYPE = 'from_concept_owner_type'

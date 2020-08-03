@@ -103,8 +103,7 @@ class OclCsvToJsonConverter(object):
         """ Process CSV into OCL-formatted JSON """
         if method == OclCsvToJsonConverter.PROCESS_BY_ROW:
             return self.process_by_row(num_rows=num_rows, attr=attr)
-        else:
-            return self.process_by_definition(num_rows=num_rows, attr=attr)
+        return self.process_by_definition(num_rows=num_rows, attr=attr)
 
     def process_by_row(self, num_rows=0, attr=None):
         """ Process CSV by applying all definitions to each row before moving to the next row """
@@ -207,8 +206,7 @@ class OclCsvToJsonConverter(object):
                 if ocl_resource:
                     ocl_resources.append(ocl_resource)
             return ocl_resources
-        else:
-            return self.build_resource(csv_row, csv_resource_def, attr=attr)
+        return self.build_resource(csv_row, csv_resource_def, attr=attr)
 
     def is_skip_row(self, csv_resource_def, csv_row):
         """

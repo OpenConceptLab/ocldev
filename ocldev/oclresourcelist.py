@@ -56,7 +56,8 @@ class OclResourceList(object):
         Return the OclResourceList as a list of OclResourceList objects with maximum
         size of chunk_size.
         """
-        chunked_lists = [self._resources[i:i + chunk_size] for i in xrange(0, len(self._resources), chunk_size)]
+        chunked_lists = [
+            self._resources[i:i + chunk_size] for i in xrange(0, len(self._resources), chunk_size)]
         chunked_resource_lists = []
         for chunked_list in chunked_lists:
             chunked_resource_lists.append(OclResourceList(chunked_list))

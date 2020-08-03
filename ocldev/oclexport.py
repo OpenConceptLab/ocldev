@@ -48,6 +48,7 @@ class OclError(Exception):
 class OclUnknownResourceError(OclError):
     """ Error thrown when an unknown resource type is encountered """
     def __init__(self, expr, msg):
+        OclError.__init__(self)
         self.expr = expr
         self.msg = msg
 
@@ -55,12 +56,13 @@ class OclUnknownResourceError(OclError):
 class OclExportNotAvailableError(OclError):
     """ Error thrown when requesting an OCL export that is not available """
     def __init__(self, expr, msg):
+        OclError.__init__(self)
         self.expr = expr
         self.msg = msg
 
 
 class OclExportFactory(object):
-    """ Factory class to create OclExport factory objects """   
+    """ Factory class to create OclExport factory objects """
 
     @staticmethod
     def load_export(repo_version_url='', oclapitoken=''):
@@ -177,7 +179,8 @@ class OclExport(object):
         self._concepts = self._export_json['concepts']
         self._mappings = self._export_json['mappings']
 
-    def _add_mappings_to_concept(self, concept, include_mappings=True, include_inverse_mappings=True):
+    def _add_mappings_to_concept(self, concept, include_mappings=True,
+                                 include_inverse_mappings=True):
         """ Adds mappings from this export to a copy of the provided concept """
         return_concept = concept.copy()
         return_concept['mappings'] = []
@@ -187,16 +190,18 @@ class OclExport(object):
                 return_concept['mappings'].append(mapping)
             if include_inverse_mappings and mapping['to_concept_url'] == concept_uri:
                 return_concept['mappings'].append(mapping)
-        return return_concept        
+        return return_concept
 
     def get_concept_by_index(self, index, include_mappings=False, include_inverse_mappings=False):
+        """ Return concept corresponding to a specified index """
         if not include_mappings and not include_inverse_mappings:
             return self._concepts[index]
         return self._add_mappings_to_concept(
             self._concepts[index], include_mappings=include_mappings,
             include_inverse_mappings=include_inverse_mappings)
 
-    def get_concept_by_id(self, concept_id, include_mappings=False, include_inverse_mappings=False):
+    def get_concept_by_id(self, concept_id, include_mappings=False,
+                          include_inverse_mappings=False):
         """ Returns the first concept that matches the specified ID, otherwise returns None """
         for concept in self._concepts:
             if concept['id'] == concept_id:
@@ -207,7 +212,8 @@ class OclExport(object):
                     include_inverse_mappings=include_inverse_mappings)
         return None
 
-    def get_concept_by_uri(self, concept_uri, include_mappings=False, include_inverse_mappings=False):
+    def get_concept_by_uri(self, concept_uri, include_mappings=False,
+                           include_inverse_mappings=False):
         """ Returns the first concept that matches the specified URL, otherwise returns None """
         for concept in self._concepts:
             if concept['url'] == concept_uri:
@@ -322,7 +328,8 @@ class OclExport(object):
             # Check for internal/external status of this mapping
             is_from_concept_in_export = False
             is_to_concept_in_export = False
-            if 'from_concept_url' in mapping and self.get_concept_by_uri(mapping['from_concept_url']):
+            if ('from_concept_url' in mapping and
+                    self.get_concept_by_uri(mapping['from_concept_url'])):
                 is_from_concept_in_export = True
             if 'to_concept_url' in mapping and self.get_concept_by_uri(mapping['to_concept_url']):
                 is_to_concept_in_export = True
