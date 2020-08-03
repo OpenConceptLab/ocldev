@@ -404,6 +404,41 @@ class OclBulkImporter(object):
         return import_response
 
     @staticmethod
+    def get_queued_imports(api_url_root='', api_token='', queue='', status_filter=None):
+        """
+        :param api_url_root:
+        :param api_token:
+        :param queue: Optional queue filter. If empty, returns results across all user's queues.
+        :param status_filter: Optional status filter. Can be a string or list of strings
+            corresponding to values status values that are still returned.
+        """
+        # Retrieve the queued imports
+        url = '%s/manage/bulkimport/' % api_url_root
+        if queue:
+            url += '%s/' % queue
+        api_headers = {}
+        if api_token:
+            api_headers['Authorization'] = 'Token %s' % api_token
+        queued_imports_response = requests.get(url, headers=api_headers)
+        queued_imports_response.raise_for_status()
+        queued_imports = queued_imports_response.json()
+
+        # Optionally filter the queued imports by status
+        if status_filter:
+            filtered_queued_imports = []
+            if isinstance(status_filter, str):
+                status_filter = [status_filter]
+            if not isinstance(status_filter, list):
+                raise TypeError(
+                    "status_filter argument must be list or string. %s provided." % type(status_filter))
+            for queued_import in queued_imports:
+                if "state" in queued_import and queued_import["state"] in status_filter:
+                    filtered_queued_imports.append(queued_import)
+            return filtered_queued_imports
+
+        return queued_imports
+
+    @staticmethod
     def get_bulk_import_results(task_id=None, api_url_root='', api_token='',
                                 max_wait_seconds=0, delay_seconds=15):
         """
