@@ -13,8 +13,7 @@ export = oclexport.OclExportFactory.load_latest_export(
 
 # Load export from JSON file
 export_filename = 'my-export.json'
-export = oclexport.OclExportFactory.load_export(
-    repo_version_url=repo_version_url, oclapitoken=my_ocl_api_token)
+export = oclexport.OclExportFactory.load_from_export_json_file(export_filename)
 
 # Get concepts from export that include mappings
 concept_a = export.get_concept_by_index(
