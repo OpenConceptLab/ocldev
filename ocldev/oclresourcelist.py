@@ -2,9 +2,9 @@
 import csv
 import sys
 import json
-import oclconstants
-import oclvalidator
-import oclcsvtojsonconverter
+from . import oclconstants
+from . import oclvalidator
+from . import oclcsvtojsonconverter
 
 
 class OclResourceList(object):
@@ -57,13 +57,13 @@ class OclResourceList(object):
         size of chunk_size.
         """
         chunked_lists = [
-            self._resources[i:i + chunk_size] for i in xrange(0, len(self._resources), chunk_size)]
+            self._resources[i:i + chunk_size] for i in range(0, len(self._resources), chunk_size)]
         chunked_resource_lists = []
         for chunked_list in chunked_lists:
             chunked_resource_lists.append(OclResourceList(chunked_list))
         return chunked_resource_lists
 
-    def next(self):
+    def __next__(self):
         """ Get the next item in the list """
         if self._current_iter >= len(self._resources):
             raise StopIteration
@@ -271,7 +271,7 @@ class OclResourceList(object):
 
     def get_resource_by_url(self, url):
         """ Return the first resource that matches the specified URL. """
-        if isinstance(url, basestring) and url:
+        if isinstance(url, str) and url:
             url_needle = url.strip()
         else:
             return None

@@ -5,7 +5,7 @@ def test_get_resource():
     resources = ocldev.oclresourcelist.OclResourceList()
     resource = {'resource_type': 'Concept', 'id': 'A', 'name': 'Bob', 'owner_id': 'PEPFAR', 'source': 'PLM'}
     resources.append(resource)
-    print resources[0]
+    print(resources[0])
     assert resource == resources[0]
 
 
@@ -18,7 +18,7 @@ def test_resource_iterator():
     count = 0
     for resource in resources:
         count += 1
-        print resource
+        print(resource)
     assert count == len(resources)
 
 
@@ -38,7 +38,7 @@ def test_csv_to_json_conversion():
     }
     csv_resources.append(csv_resource_a)
     json_resources = csv_resources.convert_to_ocl_formatted_json()
-    print json_resources.to_json()
+    print(json_resources.to_json())
     expected_json_output = [
         {
             'type': 'Concept',

@@ -34,9 +34,9 @@ pprint.pprint(concept_list)
 """
 import json
 import zipfile
-from StringIO import StringIO
+from io import StringIO
 import requests
-import oclresourcelist
+from . import oclresourcelist
 
 
 class OclError(Exception):

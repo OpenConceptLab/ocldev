@@ -11,7 +11,7 @@ Next steps:
 import csv
 import json
 import re
-import oclconstants
+from . import oclconstants
 
 
 class OclCsvToJsonConverter(object):
@@ -140,10 +140,10 @@ class OclCsvToJsonConverter(object):
                     self.DEF_KEY_IS_ACTIVE]:
                 continue
             if self.verbose:
-                print '\n%s' % ('*' * 120)
-                print 'Processing definition: %s' % csv_resource_def['definition_name']
+                print(('\n%s' % ('*' * 120)))
+                print(('Processing definition: %s' % csv_resource_def['definition_name']))
                 # print csv_resource_def
-                print '*' * 120
+                print(('*' * 120))
             self._current_row_num = 0
             for csv_row in self.input_list:
                 if num_rows and self._current_row_num >= num_rows:
@@ -382,10 +382,10 @@ class OclCsvToJsonConverter(object):
         # Optionally display debug info
         if self.verbose:
             if self._current_row_num:
-                print '[Row %s of %s] %s' % (self._current_row_num, self._total_rows,
-                                             json.dumps(ocl_resource))
+                print(('[Row %s of %s] %s' % (self._current_row_num, self._total_rows,
+                                             json.dumps(ocl_resource))))
             else:
-                print json.dumps(ocl_resource)
+                print((json.dumps(ocl_resource)))
 
         return ocl_resource
 

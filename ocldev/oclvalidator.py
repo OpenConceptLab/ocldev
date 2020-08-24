@@ -12,8 +12,8 @@ resource_list = ocldev.oclresourcelist.OclJsonResourcelist.load_from_file(filena
 resource_list.validate()
 """
 import jsonschema
-import oclresourcelist
-import oclconstants
+from . import oclresourcelist
+from . import oclconstants
 
 
 class OclJsonValidator(object):

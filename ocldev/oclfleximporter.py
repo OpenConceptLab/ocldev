@@ -24,10 +24,10 @@ import json
 import sys
 import time
 from datetime import datetime
-import urllib
+import urllib.request, urllib.parse, urllib.error
 import requests
-import oclconstants
-import oclresourcelist
+from . import oclconstants
+from . import oclresourcelist
 
 
 class OclImportError(Exception):
@@ -198,7 +198,7 @@ class OclImportResults(object):
 
     def get_logging_keys(self):
         """ Returns list of logging keys stored in the results object """
-        return self._results.keys()
+        return list(self._results.keys())
 
     def get_import_results(self, results_mode='summary', root_key=None):
         """
@@ -239,7 +239,7 @@ class OclImportResults(object):
         if root_key:
             keys = [root_key]
         else:
-            keys = self._results.keys()
+            keys = list(self._results.keys())
 
         # Build results summary dictionary - organized by action type instead of root
         results_summary = {}
@@ -294,7 +294,7 @@ class OclImportResults(object):
             logging_keys = [root_key]
             output = 'REPORT OF IMPORT RESULTS FOR KEY "%s":' % root_key
         else:
-            logging_keys = self._results.keys()
+            logging_keys = list(self._results.keys())
             output = 'REPORT OF IMPORT RESULTS:\n'
 
         # Iterate through logging keys and prepare report
@@ -329,7 +329,7 @@ class OclImportResults(object):
     @staticmethod
     def load_from_json(json_results):
         """ Load serialized JSON results into this object. Works with the to_json method """
-        if isinstance(json_results, basestring):
+        if isinstance(json_results, str):
             json_results = json.loads(json_results)
         if isinstance(json_results, dict):
             results_obj = OclImportResults()
@@ -786,7 +786,7 @@ class OclFlexImporter(object):
         # Loop through each JSON object
         self.import_results = OclImportResults(total_lines=total_lines)
         self.report_progress()
-        obj_def_keys = self.obj_def.keys()
+        obj_def_keys = list(self.obj_def.keys())
         count = 0
         num_processed = 0
         num_skipped = 0
@@ -1086,7 +1086,7 @@ class OclFlexImporter(object):
 
         # Pull out the fields that aren't allowed
         obj_not_allowed = {}
-        for k in obj.keys():
+        for k in list(obj.keys()):
             if k not in self.obj_def[obj_type]["allowed_fields"]:
                 obj_not_allowed[k] = obj.pop(k)
 
@@ -1245,7 +1245,7 @@ class OclFlexImporter(object):
 
         # Add query parameters (if provided)
         if query_params:
-            url += '?' + urllib.urlencode(query_params)
+            url += '?' + urllib.parse.urlencode(query_params)
 
         # If delete, then clear the cache of object existence
         if action_type == OclFlexImporter.ACTION_TYPE_DELETE:
@@ -1287,7 +1287,7 @@ class OclFlexImporter(object):
             if obj_url in self._cache_obj_exists:
                 del self._cache_obj_exists[obj_url]
         else:
-            for key in self._cache_obj_exists.keys():
+            for key in list(self._cache_obj_exists.keys()):
                 if key[:len(obj_url)] == obj_url:
                     del self._cache_obj_exists[key]
 
