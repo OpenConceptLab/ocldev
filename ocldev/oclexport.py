@@ -60,7 +60,7 @@ class OclExportNotAvailableError(OclError):
         self.msg = msg
 
 
-class OclExportFactory(object):
+class OclExportFactory:
     """ Factory class to create OclExport factory objects """
 
     @staticmethod
@@ -139,7 +139,7 @@ class OclExportFactory(object):
             return OclExport(export_json)
 
 
-class OclExport(object):
+class OclExport:
     """ Object representing an OCL export of an source or collection version """
 
     def __init__(self, export_json=None, ocl_export=None):

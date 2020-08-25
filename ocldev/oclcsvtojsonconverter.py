@@ -14,7 +14,7 @@ import re
 from . import oclconstants
 
 
-class OclCsvToJsonConverter(object):
+class OclCsvToJsonConverter:
     """ Class to convert CSV file to OCL-formatted JSON flex file """
 
     # Constants for method of processing the CSV

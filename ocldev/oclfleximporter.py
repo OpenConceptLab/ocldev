@@ -76,7 +76,7 @@ class UnsupportedActionType(OclImportError):
         self.message = message
 
 
-class OclImportResults(object):
+class OclImportResults:
     """ Class to capture and process the results of processing an import script """
 
     # Constants for import results modes
@@ -343,7 +343,7 @@ class OclImportResults(object):
             raise TypeError('Expected string or dict. "%s" received.' % str(type(json_results)))
 
 
-class OclBulkImporter(object):
+class OclBulkImporter:
     """
     Helper class to use the OCL bulk import API to process an OCL-formatted JSON lines file.
     The OCL bulk import API simply runs the OclFlexImporter object asynchronously on the server
@@ -484,7 +484,7 @@ class OclBulkImporter(object):
         return None
 
 
-class OclFlexImporter(object):
+class OclFlexImporter:
     """
     Class to flexibly import multiple resource types into OCL from JSON lines files via
     the OCL API rather than the batch importer.

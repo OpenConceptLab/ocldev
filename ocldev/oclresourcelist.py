@@ -7,7 +7,7 @@ from . import oclvalidator
 from . import oclcsvtojsonconverter
 
 
-class OclResourceList(object):
+class OclResourceList:
     """ Generic class to manage a list of OCL resources """
 
     def __init__(self, resources=None):

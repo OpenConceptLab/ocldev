@@ -16,7 +16,7 @@ from . import oclresourcelist
 from . import oclconstants
 
 
-class OclJsonValidator(object):
+class OclJsonValidator:
     """ Class to validate OCL-formatted JSON resource definitions """
 
     @staticmethod
@@ -417,7 +417,7 @@ class OclJsonValidator(object):
     }
 
 
-class OclCsvValidator(object):
+class OclCsvValidator:
     """ Class to validate OCL-formatted CSV resource definitions """
 
     @staticmethod
