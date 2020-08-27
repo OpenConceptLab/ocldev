@@ -356,7 +356,7 @@ class OclBulkImporter:
     oclfleximporter.OclBulkImporter()
     """
 
-    OCL_BULK_IMPORT_API_ENDPOINT = '/manage/bulkimport/'
+    OCL_BULK_IMPORT_API_ENDPOINT = '/importers/bulk-import/'
     OCL_BULK_IMPORT_MAX_WAIT_SECONDS = 120 * 60
     OCL_BULK_IMPORT_MINIMUM_DELAY_SECONDS = 5
 
@@ -413,7 +413,7 @@ class OclBulkImporter:
             corresponding to values status values that are still returned.
         """
         # Retrieve the queued imports
-        url = '%s/manage/bulkimport/' % api_url_root
+        url = '%s/importers/bulk-import/' % api_url_root
         if queue:
             url += '%s/' % queue
         api_headers = {}
