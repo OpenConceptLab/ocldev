@@ -34,9 +34,10 @@ pprint.pprint(concept_list)
 """
 import json
 import zipfile
-from io import StringIO
 import requests
-from . import oclresourcelist
+import six
+
+from ocldev import oclresourcelist
 
 
 class OclError(Exception):
@@ -60,7 +61,7 @@ class OclExportNotAvailableError(OclError):
         self.msg = msg
 
 
-class OclExportFactory:
+class OclExportFactory(object):
     """ Factory class to create OclExport factory objects """
 
     @staticmethod
@@ -87,7 +88,7 @@ class OclExportFactory:
 
         # Decompress "export.json" from the zipfile in memory and return as a python dictionary
         repo_export = None
-        export_string_handle = StringIO(r.content)
+        export_string_handle = six.StringIO(r.content)
         zipref = zipfile.ZipFile(export_string_handle, "r")
         if 'export.json' in zipref.namelist():
             repo_export = json.loads(zipref.read('export.json'))
@@ -139,7 +140,7 @@ class OclExportFactory:
             return OclExport(export_json)
 
 
-class OclExport:
+class OclExport(object):
     """ Object representing an OCL export of an source or collection version """
 
     def __init__(self, export_json=None, ocl_export=None):

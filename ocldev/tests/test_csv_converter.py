@@ -1,3 +1,5 @@
+import six
+
 import ocldev.oclcsvtojsonconverter
 
 
@@ -21,7 +23,7 @@ def test_convert_org():
         "name": "Test Org"
     }]
     actual_json_output = convert_csv_to_json(csv_input)
-    print(actual_json_output)
+    six.print_(actual_json_output)
     assert actual_json_output == expected_json_output, "Converted JSON does not match expected output"
 
 
@@ -45,7 +47,7 @@ def test_convert_source():
         'supported_locales': 'en'
     }]
     actual_json_output = convert_csv_to_json(csv_input)
-    print(actual_json_output)
+    six.print_(actual_json_output)
     assert actual_json_output == expected_json_output, "Converted JSON does not match expected output"
 
 
@@ -94,5 +96,5 @@ def test_convert_concept():
         'id': '12'
     }]
     actual_json_output = convert_csv_to_json(csv_input)
-    print(actual_json_output)
+    six.print_(actual_json_output)
     assert actual_json_output == expected_json_output, "Converted JSON does not match expected output"

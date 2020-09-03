@@ -12,11 +12,11 @@ resource_list = ocldev.oclresourcelist.OclJsonResourcelist.load_from_file(filena
 resource_list.validate()
 """
 import jsonschema
-from . import oclresourcelist
-from . import oclconstants
+from ocldev import oclresourcelist
+from ocldev import oclconstants
 
 
-class OclJsonValidator:
+class OclJsonValidator(object):
     """ Class to validate OCL-formatted JSON resource definitions """
 
     @staticmethod
@@ -417,7 +417,7 @@ class OclJsonValidator:
     }
 
 
-class OclCsvValidator:
+class OclCsvValidator(object):
     """ Class to validate OCL-formatted CSV resource definitions """
 
     @staticmethod

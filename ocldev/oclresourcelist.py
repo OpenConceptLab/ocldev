@@ -2,12 +2,15 @@
 import csv
 import sys
 import json
-from . import oclconstants
-from . import oclvalidator
-from . import oclcsvtojsonconverter
+
+import six
+
+from ocldev import oclconstants
+from ocldev import oclvalidator
+from ocldev import oclcsvtojsonconverter
 
 
-class OclResourceList:
+class OclResourceList(object):
     """ Generic class to manage a list of OCL resources """
 
     def __init__(self, resources=None):
@@ -42,7 +45,7 @@ class OclResourceList:
         """ Return whether the two objects are equal, i.e. have the same resource lists """
         if len(self) != len(other):
             return False
-        for i in range(len(self)):
+        for i in six.moves.range(len(self)):
             if self[i] != other[i]:
                 return False
         return True
@@ -57,7 +60,7 @@ class OclResourceList:
         size of chunk_size.
         """
         chunked_lists = [
-            self._resources[i:i + chunk_size] for i in range(0, len(self._resources), chunk_size)]
+            self._resources[i:i + chunk_size] for i in six.moves.range(0, len(self._resources), chunk_size)]
         chunked_resource_lists = []
         for chunked_list in chunked_lists:
             chunked_resource_lists.append(OclResourceList(chunked_list))
@@ -70,6 +73,9 @@ class OclResourceList:
         else:
             self._current_iter += 1
             return self._resources[self._current_iter - 1]
+
+    def next(self):
+        return self.__next__()
 
     def refresh_index(self):
         """
@@ -271,7 +277,7 @@ class OclResourceList:
 
     def get_resource_by_url(self, url):
         """ Return the first resource that matches the specified URL. """
-        if isinstance(url, str) and url:
+        if isinstance(url, six.string_types) and url:
             url_needle = url.strip()
         else:
             return None

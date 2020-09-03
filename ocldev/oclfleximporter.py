@@ -24,10 +24,12 @@ import json
 import sys
 import time
 from datetime import datetime
-import urllib.request, urllib.parse, urllib.error
+
+import six
+import six.moves.urllib.parse as urllib_parse
 import requests
-from . import oclconstants
-from . import oclresourcelist
+from ocldev import oclconstants
+from ocldev import oclresourcelist
 
 
 class OclImportError(Exception):
@@ -76,7 +78,7 @@ class UnsupportedActionType(OclImportError):
         self.message = message
 
 
-class OclImportResults:
+class OclImportResults(object):
     """ Class to capture and process the results of processing an import script """
 
     # Constants for import results modes
@@ -329,7 +331,7 @@ class OclImportResults:
     @staticmethod
     def load_from_json(json_results):
         """ Load serialized JSON results into this object. Works with the to_json method """
-        if isinstance(json_results, str):
+        if isinstance(json_results, six.string_types):
             json_results = json.loads(json_results)
         if isinstance(json_results, dict):
             results_obj = OclImportResults()
@@ -343,7 +345,7 @@ class OclImportResults:
             raise TypeError('Expected string or dict. "%s" received.' % str(type(json_results)))
 
 
-class OclBulkImporter:
+class OclBulkImporter(object):
     """
     Helper class to use the OCL bulk import API to process an OCL-formatted JSON lines file.
     The OCL bulk import API simply runs the OclFlexImporter object asynchronously on the server
@@ -356,7 +358,9 @@ class OclBulkImporter:
     oclfleximporter.OclBulkImporter()
     """
 
-    OCL_BULK_IMPORT_API_ENDPOINT = '/importers/bulk-import/'
+    # when we get rid of py2 support use following
+    # OCL_BULK_IMPORT_API_ENDPOINT = '/importers/bulk-import/'
+    OCL_BULK_IMPORT_API_ENDPOINT = '/manage/bulkimport/'
     OCL_BULK_IMPORT_MAX_WAIT_SECONDS = 120 * 60
     OCL_BULK_IMPORT_MINIMUM_DELAY_SECONDS = 5
 
@@ -413,7 +417,10 @@ class OclBulkImporter:
             corresponding to values status values that are still returned.
         """
         # Retrieve the queued imports
-        url = '%s/importers/bulk-import/' % api_url_root
+        url = '%s/manage/bulkimport/' % api_url_root
+        # when we get rid of py2 support use following
+        # url = '%s/importers/bulk-import/' % api_url_root
+
         if queue:
             url += '%s/' % queue
         api_headers = {}
@@ -484,7 +491,7 @@ class OclBulkImporter:
         return None
 
 
-class OclFlexImporter:
+class OclFlexImporter(object):
     """
     Class to flexibly import multiple resource types into OCL from JSON lines files via
     the OCL API rather than the batch importer.
@@ -1246,7 +1253,7 @@ class OclFlexImporter:
 
         # Add query parameters (if provided)
         if query_params:
-            url += '?' + urllib.parse.urlencode(query_params)
+            url += '?' + urllib_parse.urlencode(query_params)
 
         # If delete, then clear the cache of object existence
         if action_type == OclFlexImporter.ACTION_TYPE_DELETE:

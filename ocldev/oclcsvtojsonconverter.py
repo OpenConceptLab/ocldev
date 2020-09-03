@@ -11,10 +11,13 @@ Next steps:
 import csv
 import json
 import re
-from . import oclconstants
+
+import six
+
+from ocldev import oclconstants
 
 
-class OclCsvToJsonConverter:
+class OclCsvToJsonConverter(object):
     """ Class to convert CSV file to OCL-formatted JSON flex file """
 
     # Constants for method of processing the CSV
@@ -140,10 +143,10 @@ class OclCsvToJsonConverter:
                     self.DEF_KEY_IS_ACTIVE]:
                 continue
             if self.verbose:
-                print(('\n%s' % ('*' * 120)))
-                print(('Processing definition: %s' % csv_resource_def['definition_name']))
+                six.print_(('\n%s' % ('*' * 120)))
+                six.print_(('Processing definition: %s' % csv_resource_def['definition_name']))
                 # print csv_resource_def
-                print(('*' * 120))
+                six.print_(('*' * 120))
             self._current_row_num = 0
             for csv_row in self.input_list:
                 if num_rows and self._current_row_num >= num_rows:
@@ -382,10 +385,10 @@ class OclCsvToJsonConverter:
         # Optionally display debug info
         if self.verbose:
             if self._current_row_num:
-                print(('[Row %s of %s] %s' % (self._current_row_num, self._total_rows,
+                six.print_(('[Row %s of %s] %s' % (self._current_row_num, self._total_rows,
                                              json.dumps(ocl_resource))))
             else:
-                print((json.dumps(ocl_resource)))
+                six.print_((json.dumps(ocl_resource)))
 
         return ocl_resource
 

@@ -3,7 +3,7 @@ Shared constants used throughout the ocldev package
 """
 
 
-class OclConstants:
+class OclConstants(object):
     """ Shared constants used in the ocldev package """
 
     # OCL resource type constants
