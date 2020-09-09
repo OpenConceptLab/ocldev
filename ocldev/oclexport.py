@@ -37,8 +37,6 @@ import zipfile
 import requests
 import six
 
-from ocldev import oclresourcelist
-
 
 class OclError(Exception):
     """ Base class for exceptions in this module """
@@ -158,6 +156,7 @@ class OclExport(object):
         """ Return all concepts and mappings as an OclJsonResourceList """
         if not self._export_json:
             return None
+        from ocldev import oclresourcelist
         resource_list = oclresourcelist.OclJsonResourceList()
         resource_list.append(self._concepts)
         resource_list.append(self._mappings)

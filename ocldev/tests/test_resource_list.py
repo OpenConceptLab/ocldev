@@ -118,13 +118,13 @@ def test_display_resource_list_as_csv():
 
 
 def test_load_from_file():
-    filename = 'sample.csv'
+    filename = './tests/sample.csv'
     resource_list = ocldev.oclresourcelist.OclCsvResourceList.load_from_file(filename)
     assert len(resource_list) == 66
 
 
 def test_summarize():
-    filename = 'sample.csv'
+    filename = './tests/sample.csv'
     csv_resources = ocldev.oclresourcelist.OclCsvResourceList.load_from_file(filename)
     json_resources = csv_resources.convert_to_ocl_formatted_json()
     csv_resource_type_summary = csv_resources.summarize(core_attr_key='resource_type')

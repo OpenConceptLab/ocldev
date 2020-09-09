@@ -24,7 +24,7 @@ def test_validate_csv_organization():
 
 
 def test_validate_csv_file():
-    filename = 'sample.csv'
+    filename = './tests/sample.csv'
     resource_list = ocldev.oclresourcelist.OclCsvResourceList.load_from_file(filename)
     resource_list.validate()
     assert True == True

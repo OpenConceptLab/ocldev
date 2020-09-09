@@ -6,7 +6,6 @@ import json
 import six
 
 from ocldev import oclconstants
-from ocldev import oclvalidator
 from ocldev import oclcsvtojsonconverter
 
 
@@ -333,6 +332,7 @@ class OclCsvResourceList(OclResourceList):
 
     def validate(self):
         """ Validate the resource list using the OclCsvValidator """
+        from ocldev import oclvalidator
         oclvalidator.OclCsvValidator.validate(self)
 
     def get_unique_column_headers(self, default_columns=None):
@@ -365,6 +365,7 @@ class OclJsonResourceList(OclResourceList):
 
     def validate(self):
         """ Validate the resource list using the OclCsvValidator """
+        from ocldev import oclvalidator
         oclvalidator.OclJsonValidator.validate(self)
 
     def get_unique_column_headers(self, default_columns=None):
