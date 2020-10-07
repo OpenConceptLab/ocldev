@@ -113,7 +113,9 @@ class OclExportFactory(object):
     @staticmethod
     def get_latest_version_id(repo_url, oclapitoken=''):
         """
-        Get the ID of the most recent released version of the specified repository
+        Get the ID of the most recent released version of the specified repository.
+        Repo URL should be of the format:
+        https://api.openconceptlab.org/orgs/MyOrg/sources/MySource/
         """
 
         # Prepare the request headers
@@ -141,6 +143,8 @@ class OclExportFactory(object):
 class OclExport(object):
     """ Object representing an OCL export of an source or collection version """
 
+    RESOURCE_PATTERN = r'^(\/(orgs|users)\/([a-zA-Z0-9\-\.\_\@]+)\/(sources|collections)\/([a-zA-Z0-9\-\.\_\@]+)\/(concepts|mappings)\/([a-zA-Z0-9\-\.\_\@]+)\/)(([a-zA-Z0-9\-\.\_\@]+)\/)?$'
+
     def __init__(self, export_json=None, ocl_export=None):
         """ Initialize this OclExport object """
         self._export_json = None
@@ -148,18 +152,112 @@ class OclExport(object):
         self._mappings = []
         self.set_export(export_json=export_json, ocl_export=ocl_export)
 
+    def __len__(self):
+        """ Number of resources in this list """
+        if self._export_json:
+            return len(self._export_json['concepts']) + len(self._export_json['mappings'])
+
     def get_full_export(self):
         """ Return full contents of export as a python dictionary """
         return self._export_json
 
-    def to_resource_list(self):
-        """ Return all concepts and mappings as an OclJsonResourceList """
+    def to_resource_list(self, do_clean_for_bulk_import=False,
+                         do_include_repo=False, do_include_repo_version=False):
+        """
+        Return all concepts, mappings, and (optionally) the repository and repository version
+        as an OclJsonResourceList. If `do_clean_for_bulk_import` is true: 
+            - if the repository type is "Source Version", concepts and mappings are included
+            - if the repository type is "Collection", references (and not concepts and mappings)
+              are included
+            - only attributes required to import an equivalent resource via bulk import
+              are included
+        """
         if not self._export_json:
             return None
         from ocldev import oclresourcelist
         resource_list = oclresourcelist.OclJsonResourceList()
-        resource_list.append(self._concepts)
-        resource_list.append(self._mappings)
+
+        # Determine repository type
+        if self._export_json['type'] == 'Collection Version':
+            repo_type = 'Collection'
+        elif self._export_json['type'] == 'Source Version':
+            repo_type = 'Source'
+        else:
+            raise ValueError('Invalid export type "%s". Expected "Source Version" or "Collection Version".' % self._export_json['type'])
+
+        # Add resource for the repository (source or collection)
+        if do_include_repo:
+            remove_attrs = ['active_concepts', 'active_mappings', 'concepts_url', 'created_by',
+                            'created_on', 'mappings_url', 'owner_url', 'updated_on', 'updated_by',
+                            'url', 'uuid', 'versions', 'versions_url']
+            if repo_type.lower() not in self._export_json:
+                raise ValueError('Expected "%s" field in export.' % repo_type.lower())
+            repo = dict(self._export_json[repo_type.lower()])
+            for attr_key in remove_attrs:
+                repo.pop(attr_key, '')
+            resource_list.append(repo)
+
+        # Prepare for bulk import
+        if do_clean_for_bulk_import:
+            # Add concepts
+            if repo_type == 'Source':
+                allowed_attr_keys = [
+                    'concept_class', 'datatype', 'descriptions', 'external_id', 'extras', 'id', 'names',
+                    'owner', 'owner_type', 'retired', 'source', 'type']
+                for concept in self._concepts:
+                    new_concept = dict(concept)
+                    for attr_key in concept.keys():
+                        if attr_key not in allowed_attr_keys:
+                            new_concept.pop(attr_key)
+                    resource_list.append(new_concept)
+
+            # Add mappings
+            if repo_type == 'Source':
+                allowed_attr_keys = [
+                    'external_id', 'extras', 'from_concept_url', 'id', 'map_type', 'owner',
+                    'owner_type', 'retired', 'source', 'to_concept_code', 'to_concept_url',
+                    'to_source_url', 'to_concept_name', 'type']
+                for mapping in self._mappings:
+                    # Fix the mapping type, if its funky
+                    new_mapping = dict(mapping)
+                    if mapping['type'] == 'MappingVersion':
+                        new_mapping['type'] = 'Mapping'
+                    for attr_key in mapping.keys():
+                        if attr_key not in allowed_attr_keys:
+                            new_mapping.pop(attr_key)
+                    resource_list.append(new_mapping)
+
+            # Add references
+            if 'references' in self._export_json and repo_type == 'Collection':
+                import re
+                compiled_regex = re.compile(r'^' + OclExport.RESOURCE_PATTERN + '$')
+                reference_expressions = []
+                for resource_reference in self._export_json['references']:
+                    # Make sure the expression does not have the resoruce version
+                    regex_result = compiled_regex.match(resource_reference['expression'])
+                    if regex_result is not None:
+                        reference_expressions.append(regex_result.group(1))
+                if reference_expressions:
+                    resource_list.append({
+                        'type': 'Reference',
+                        'owner': self._export_json['id'],
+                        'owner_type': self._export_json['type'],
+                        'data': {'expressions': reference_expressions}
+                    })
+        else:
+            # Add all concepts and mappings without modifying
+            resource_list.append(self._concepts)
+            resource_list.append(self._mappings)
+
+        # Add resource for repository version
+        if do_include_repo_version:
+            allowed_attr_keys = ['type', 'id', 'description', 'released', 'retired', 'owner',
+                                 'owner_type', 'extras', 'external_id']
+            repo_version = {}
+            for attr_key in allowed_attr_keys:
+                repo_version[attr_key] = self._export_json.get(attr_key, '')
+            resource_list.append(repo_version)
+
         return resource_list
 
     def set_export(self, export_json=None, ocl_export=None):
