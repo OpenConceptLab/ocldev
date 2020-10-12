@@ -86,7 +86,12 @@ class OclExportFactory(object):
 
         # Decompress "export.json" from the zipfile in memory and return as a python dictionary
         repo_export = None
-        export_string_handle = six.StringIO(r.content)
+        content = r.content
+        if isinstance(content, bytes):
+            export_string_handle = six.BytesIO(content)
+        else:
+            export_string_handle = six.StringIO(content)
+
         zipref = zipfile.ZipFile(export_string_handle, "r")
         if 'export.json' in zipref.namelist():
             repo_export = json.loads(zipref.read('export.json'))
@@ -94,7 +99,7 @@ class OclExportFactory(object):
         else:
             zipref.close()
             errmsg = 'ERROR: Invalid repository export for "%s": ' % repo_version_url
-            errmsg += 'export.json not found in the export response.\n%s' % r.content
+            errmsg += 'export.json not found in the export response.\n%s' % content
             raise Exception(errmsg)
         return OclExport(repo_export)
 
