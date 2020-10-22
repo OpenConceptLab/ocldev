@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name='ocldev',
-    version='0.1.80',
+    version='0.1.81',
     author='Open Concept Lab',
     author_email='info@openconceptlab.org',
     description='Python development library for working with OCL resources and APIs',
@@ -26,6 +26,7 @@ setuptools.setup(
     classifiers=(
         "Development Status :: 2 - Pre-Alpha",
         "Programming Language :: Python :: 2.7",
+        "Programming Language :: Python :: 3.8",
         "License :: OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)",
         "Operating System :: OS Independent",
     )
