@@ -167,7 +167,7 @@ class OclExport(object):
         return self._export_json
 
     def to_resource_list(self, do_clean_for_bulk_import=False, do_include_concepts=True,
-                         do_incldue_mappings=True, do_include_references=False,
+                         do_include_mappings=True, do_include_references=False,
                          do_include_repo=False, do_include_repo_version=False):
         """
         Return all resources in an OclExport as an as an OclJsonResourceList. By default, only
@@ -187,7 +187,9 @@ class OclExport(object):
         elif self._export_json['type'] == 'Source Version':
             repo_type = 'Source'
         else:
-            raise ValueError('Invalid export type "%s". Expected "Source Version" or "Collection Version".' % self._export_json['type'])
+            errmsg = 'Invalid export type "%s". Expected Source Version or Collection Version.' % (
+                self._export_json['type'])
+            raise ValueError(errmsg)
 
         # Add resource for the repository (source or collection)
         if do_include_repo:
@@ -205,8 +207,8 @@ class OclExport(object):
         if do_include_concepts:
             if do_clean_for_bulk_import:
                 allowed_attr_keys = [
-                    'concept_class', 'datatype', 'descriptions', 'external_id', 'extras', 'id', 'names',
-                    'owner', 'owner_type', 'retired', 'source', 'type']
+                    'concept_class', 'datatype', 'descriptions', 'external_id', 'extras', 'id',
+                    'names', 'owner', 'owner_type', 'retired', 'source', 'type']
                 for concept in self._concepts:
                     new_concept = dict(concept)
                     for attr_key in concept.keys():
@@ -217,7 +219,7 @@ class OclExport(object):
                 resource_list.append(self._concepts)
 
         # Add mappings
-        if do_incldue_mappings:
+        if do_include_mappings:
             if do_clean_for_bulk_import:
                 allowed_attr_keys = [
                     'external_id', 'extras', 'from_concept_url', 'id', 'map_type', 'owner',
