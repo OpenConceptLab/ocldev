@@ -283,7 +283,7 @@ class OclImportResults(object):
         if root_key:
             output = '%s %s for key "%s"' % (process_str, output, root_key)
         else:
-            output = '%s %s of %s -- %s in %s' % (
+            output = '%s %s of %s -- %s in %s secs' % (
                 process_str, total_count, self.total_lines, output, self.elapsed_seconds
             )
 
