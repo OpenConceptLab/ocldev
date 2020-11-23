@@ -833,6 +833,7 @@ class OclFlexImporter(object):
                 self.log('**** SKIPPING: %s' % message)
                 num_skipped += 1
 
+            self.import_results.elapsed_seconds = self.get_elapsed_seconds_from(start_time)
             self.log('[%s]' % self.import_results.get_detailed_summary())
             self.report_progress()
 
@@ -840,8 +841,12 @@ class OclFlexImporter(object):
             if self.import_delay and not self.test_mode:
                 time.sleep(self.import_delay)
 
-        self.import_results.elapsed_seconds = time.time() - start_time
+        self.import_results.elapsed_seconds = self.get_elapsed_seconds_from(start_time)
         return count
+
+    @staticmethod
+    def get_elapsed_seconds_from(start_time):
+        return time.time() - start_time
 
     def does_object_exist(self, obj_url, use_cache=True):
         """ Returns whether a resource at the specified URL already exists. """
