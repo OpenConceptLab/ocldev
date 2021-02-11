@@ -857,11 +857,10 @@ class OclFlexImporter(object):
 
         # Object existence not cached, so use OCL API to check if it exists
         request_existence = requests.head(self.api_url_root + obj_url, headers=self.api_headers)
-        results_found = int(request_existence.headers['num_found'])
-        if request_existence.status_code == requests.codes.ok and results_found > 0:
+        if request_existence.status_code == requests.codes.ok:
             self._cache_obj_exists[obj_url] = True
             return True
-        elif not results_found or (400 <= request_existence.status_code < 500):
+        elif 400 <= request_existence.status_code < 500:
             return False
         else:
             raise UnexpectedStatusCodeError(
