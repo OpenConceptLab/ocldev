@@ -37,6 +37,8 @@ import zipfile
 import requests
 import six
 
+from ocldev import oclconstants
+
 
 class OclError(Exception):
     """ Base class for exceptions in this module """
@@ -182,10 +184,14 @@ class OclExport(object):
         resource_list = oclresourcelist.OclJsonResourceList()
 
         # Determine repository type
-        if self._export_json['type'] == 'Collection Version':
-            repo_type = 'Collection'
-        elif self._export_json['type'] == 'Source Version':
-            repo_type = 'Source'
+        if (self._export_json['type'] in [
+                oclconstants.OclConstants.RESOURCE_TYPE_COLLECTION_VERSION,
+                oclconstants.OclConstants.RESOURCE_TYPE_COLLECTION]):
+            repo_type = oclconstants.OclConstants.RESOURCE_TYPE_COLLECTION
+        elif (self._export_json['type'] in [
+                oclconstants.OclConstants.RESOURCE_TYPE_SOURCE_VERSION,
+                oclconstants.OclConstants.RESOURCE_TYPE_SOURCE]):
+            repo_type = oclconstants.OclConstants.RESOURCE_TYPE_SOURCE
         else:
             errmsg = 'Invalid export type "%s". Expected Source Version or Collection Version.' % (
                 self._export_json['type'])
