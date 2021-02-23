@@ -1266,16 +1266,18 @@ class OclFlexImporter(object):
 
         # Import the object
         if not self.test_mode:
-            self.log(method, " ", self.api_url_root + url + '  ', json.dumps(obj))
+            endpoint_url = self.api_url_root + url
+            self.log(method, " ", endpoint_url + '  ', json.dumps(obj))
             if method == OclFlexImporter.HTTP_METHOD_POST:
                 request_result = requests.post(
-                    self.api_url_root + url, headers=self.api_headers, data=json.dumps(obj))
+                    endpoint_url, headers=self.api_headers, data=json.dumps(obj))
             elif method == OclFlexImporter.HTTP_METHOD_PUT:
                 request_result = requests.put(
-                    self.api_url_root + url, headers=self.api_headers, data=json.dumps(obj))
+                    endpoint_url, headers=self.api_headers, data=json.dumps(obj))
             elif method == OclFlexImporter.HTTP_METHOD_DELETE:
                 # NOTE: Deletes do not include the object in the request body
-                request_result = requests.delete(self.api_url_root + url, headers=self.api_headers)
+                endpoint_url += '&inline=true' if '?' in endpoint_url else '?inline=true'  # org non-async delete
+                request_result = requests.delete(endpoint_url, headers=self.api_headers)
             self.log("STATUS CODE:", request_result.status_code)
             self.log(request_result.headers)
             self.log(request_result.text)
