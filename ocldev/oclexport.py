@@ -91,15 +91,15 @@ class OclExportFactory(object):
                     repo_export_url, headers=oclapiheaders, allow_redirects=True)
                 request_create_export.raise_for_status()
 
-                # Delay and request the export again
-                start_time = time.time()
-                while (time.time() - start_time + delay_seconds) < max_wait_seconds:
-                    time.sleep(delay_seconds)
-                    request_export = requests.get(
-                        repo_export_url, allow_redirects=True, headers=oclapiheaders)
-                    request_export.raise_for_status()
-                    if 200 < request_export.status_code < 300:
-                        continue
+            # Delay and request the export again
+            start_time = time.time()
+            while (time.time() - start_time + delay_seconds) < max_wait_seconds:
+                time.sleep(delay_seconds)
+                request_export = requests.get(
+                    repo_export_url, allow_redirects=True, headers=oclapiheaders)
+                request_export.raise_for_status()
+                if 200 < request_export.status_code < 300:
+                    continue
 
         if request_export.status_code != 200:
             raise OclExportNotAvailableError(
