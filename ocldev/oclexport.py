@@ -32,6 +32,7 @@ pprint.pprint(concept_b)
 pprint.pprint(concept_c)
 pprint.pprint(concept_list)
 """
+import time
 import json
 import zipfile
 import requests
@@ -65,7 +66,8 @@ class OclExportFactory(object):
     """ Factory class to create OclExport factory objects """
 
     @staticmethod
-    def load_export(repo_version_url='', oclapitoken=''):
+    def load_export(repo_version_url='', oclapitoken='', do_wait_for_export=False,
+                    delay_seconds=5, max_wait_seconds=120):
         """
         Retrieve a cached repository export from OCL, decompress, parse the JSON, and
         return as a python dictionary. NOTE: The export is decompressed and parsed in
@@ -80,15 +82,33 @@ class OclExportFactory(object):
 
         # Fetch the zipped export from OCL
         repo_export_url = '%sexport/' % repo_version_url
-        r = requests.get(repo_export_url, allow_redirects=True, headers=oclapiheaders)
-        r.raise_for_status()
-        if r.status_code == 204:
-            raise OclExportNotAvailableError(
-                repo_export_url, 'Export at "%s" not available' % repo_export_url)
+        request_export = requests.get(repo_export_url, allow_redirects=True, headers=oclapiheaders)
+        request_export.raise_for_status()
+        if do_wait_for_export and request_export.status_code in [204, 208]:
+            if request_export.status_code == 204:
+                # Generate the export
+                request_create_export = requests.post(
+                    repo_export_url, headers=oclapiheaders, allow_redirects=True)
+                request_create_export.raise_for_status()
 
-        # Decompress "export.json" from the zipfile in memory and return as a python dictionary
+                # Delay and request the export again
+                start_time = time.time()
+                while (time.time() - start_time + delay_seconds) < max_wait_seconds:
+                    time.sleep(delay_seconds)
+                    request_export = requests.get(
+                        repo_export_url, allow_redirects=True, headers=oclapiheaders)
+                    request_export.raise_for_status()
+                    if 200 < request_export.status_code < 300:
+                        continue
+
+        if request_export.status_code != 200:
+            raise OclExportNotAvailableError(
+                repo_export_url, 'Export at "%s" not available: %s' % (
+                    repo_export_url, request_export.status_code))
+
+        # Decompress "export.json" from the returned zipfile in memory
         repo_export = None
-        content = r.content
+        content = request_export.content
         if isinstance(content, bytes):
             export_string_handle = six.BytesIO(content)
         else:
@@ -106,7 +126,8 @@ class OclExportFactory(object):
         return OclExport(repo_export)
 
     @staticmethod
-    def load_latest_export(repo_url, oclapitoken=''):
+    def load_latest_export(repo_url, oclapitoken='', do_wait_for_export=False,
+                           delay_seconds=5, max_wait_seconds=120):
         """
         Load latest export of the specified repository. Repo URL should be of the format:
         https://api.openconceptlab.org/orgs/MyOrg/sources/MySource/
@@ -114,7 +135,10 @@ class OclExportFactory(object):
         repo_id = OclExportFactory.get_latest_version_id(repo_url, oclapitoken=oclapitoken)
         if repo_id:
             repo_version_url = '%s%s/' % (repo_url, repo_id)
-            return OclExportFactory.load_export(repo_version_url, oclapitoken=oclapitoken)
+            return OclExportFactory.load_export(
+                repo_version_url=repo_version_url, oclapitoken=oclapitoken,
+                do_wait_for_export=do_wait_for_export, delay_seconds=delay_seconds,
+                max_wait_seconds=max_wait_seconds)
         return None
 
     @staticmethod
@@ -132,8 +156,8 @@ class OclExportFactory(object):
 
         # Get the latest version ID
         repo_latest_url = '%slatest/' % repo_url
-        r = requests.get(repo_latest_url, headers=oclapiheaders)
-        repo_version = r.json()
+        request_latest_version = requests.get(repo_latest_url, headers=oclapiheaders)
+        repo_version = request_latest_version.json()
         if repo_version and 'id' in repo_version:
             return repo_version['id']
         else:
