@@ -98,8 +98,8 @@ class OclExportFactory(object):
                 request_export = requests.get(
                     repo_export_url, allow_redirects=True, headers=oclapiheaders)
                 request_export.raise_for_status()
-                if 200 < request_export.status_code < 300:
-                    continue
+                if request_export.status_code == 200:
+                    break
 
         if request_export.status_code != 200:
             raise OclExportNotAvailableError(
@@ -113,7 +113,6 @@ class OclExportFactory(object):
             export_string_handle = six.BytesIO(content)
         else:
             export_string_handle = six.StringIO(content)
-
         zipref = zipfile.ZipFile(export_string_handle, "r")
         if 'export.json' in zipref.namelist():
             repo_export = json.loads(zipref.read('export.json'))
