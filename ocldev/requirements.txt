@@ -22,7 +22,7 @@ pathlib2==2.3.5
 pkginfo==1.5.0.1
 pluggy==0.13.0
 py==1.8.0
-Pygments==2.4.2
+Pygments==2.7.4
 pyparsing==2.4.4
 pyrsistent==0.15.7
 pytest==4.6.6
