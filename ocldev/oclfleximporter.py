@@ -583,7 +583,10 @@ class OclFlexImporter(object):
             "allowed_fields": [
                 "id", "short_code", "name", "full_name", "description",
                 "source_type", "custom_validation_schema", "public_access",
-                "default_locale", "supported_locales", "website", "extras", "external_id"
+                "default_locale", "supported_locales", "website", "extras", "external_id", "canonical_url",
+                "identifier", "contact", "jurisdiction", "publisher", "purpose", "copyright", "revision_date", "text",
+                "content_type", "experimental", "case_sensitive", "collection_reference", "hierarchy_meaning",
+                "compositional", "version_needed", "meta",
             ],
             OBJ_DEF_ATTR_HTTP_IMPORT_METHOD: {
                 ACTION_TYPE_CREATE: HTTP_METHOD_POST,
@@ -600,7 +603,9 @@ class OclFlexImporter(object):
             "allowed_fields": [
                 "id", "short_code", "name", "full_name", "description", "collection_type",
                 "custom_validation_schema", "public_access", "default_locale", "supported_locales",
-                "website", "extras", "external_id"
+                "website", "extras", "external_id", "canonical_url", "identifier", "contact", "jurisdiction",
+                "publisher", "purpose", "copyright", "revision_date", "text", "immutable", "experimental",
+                "locked_date", "meta",
             ],
             OBJ_DEF_ATTR_HTTP_IMPORT_METHOD: {
                 ACTION_TYPE_CREATE: HTTP_METHOD_POST,
@@ -616,7 +621,7 @@ class OclFlexImporter(object):
             "has_collection": False,
             "allowed_fields": [
                 "id", "external_id", "concept_class", "datatype", "names",
-                "descriptions", "retired", "extras"
+                "descriptions", "retired", "extras", "parent_concept_urls",
             ],
             OBJ_DEF_ATTR_HTTP_IMPORT_METHOD: {
                 ACTION_TYPE_CREATE: HTTP_METHOD_POST,
