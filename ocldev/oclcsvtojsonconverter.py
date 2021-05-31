@@ -65,7 +65,7 @@ class OclCsvToJsonConverter(object):
     REPLACE_CHAR = '-'
 
     def __init__(self, csv_filename='', input_list=None,
-                 csv_resource_definitions=None, verbose=False):
+                 csv_resource_definitions=None, verbose=False, allow_special_characters=False):
         """
         Initialize this object
         :param csv_filename: <string> Filename to load CSV data from; use "input_list"
@@ -74,7 +74,9 @@ class OclCsvToJsonConverter(object):
         :param csv_resource_definitions: <dict> Properly formatted dictionary defining
             how to convert CSV to OCL-JSON
         :param verbose: <int> 0=off, 1=some debug info, 2=all debug info
+        :param allow_special_characters: <bool> concept id special characters will not be replaced by `-`
         """
+        self.allow_special_characters = allow_special_characters
         self.csv_filename = csv_filename
         self.input_list = input_list
         if csv_filename:
@@ -740,6 +742,9 @@ class OclCsvToJsonConverter(object):
         Format a string according to the OCL ID rules: Everything in INVALID_CHARS goes,
         except that underscores are allowed for the concept_id
         """
+        if self.allow_special_characters:
+            return unformatted_id
+
         formatted_id = list(unformatted_id)
         if allow_underscore:
             # Remove underscore from the invalid characters - Concept IDs are okay with underscores
@@ -1237,8 +1242,12 @@ class OclStandardCsvToJsonConverter(OclCsvToJsonConverter):
         },
     ]
 
-    def __init__(self, csv_filename='', input_list=None, verbose=False):
+    def __init__(self, csv_filename='', input_list=None, verbose=False, allow_special_characters=False):
         """ Initialize the object with the standard CSV resource definition """
         OclCsvToJsonConverter.__init__(
-            self, csv_filename=csv_filename, input_list=input_list,
-            csv_resource_definitions=self.default_csv_resource_definitions, verbose=verbose)
+            self, csv_filename=csv_filename,
+            input_list=input_list,
+            csv_resource_definitions=self.default_csv_resource_definitions,
+            verbose=verbose,
+            allow_special_characters=False
+        )
