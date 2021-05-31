@@ -1249,5 +1249,5 @@ class OclStandardCsvToJsonConverter(OclCsvToJsonConverter):
             input_list=input_list,
             csv_resource_definitions=self.default_csv_resource_definitions,
             verbose=verbose,
-            allow_special_characters=False
+            allow_special_characters=allow_special_characters
         )
