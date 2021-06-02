@@ -359,9 +359,8 @@ class OclBulkImporter(object):
     oclfleximporter.OclBulkImporter()
     """
 
-    # when we get rid of py2 support use following
-    # OCL_BULK_IMPORT_API_ENDPOINT = '/importers/bulk-import/'
-    OCL_BULK_IMPORT_API_ENDPOINT = '/manage/bulkimport/'
+    OCL_BULK_IMPORT_API_ENDPOINT = '/importers/bulk-import/'
+    OCL_BULK_IMPORT_PARALLEL_API_ENDPOINT = '/importers/bulk-import-parallel-inline/'
     OCL_BULK_IMPORT_MAX_WAIT_SECONDS = 120 * 60
     OCL_BULK_IMPORT_MINIMUM_DELAY_SECONDS = 5
 
@@ -374,7 +373,7 @@ class OclBulkImporter(object):
 
     @staticmethod
     def post(file_path='', input_list=None, api_url_root='', api_token='', queue='',
-             test_mode=False):
+             test_mode=False, do_parallel_processing=False):
         """
         Post the import to the OCL bulk import API endpoint and return the request object
         :param file_path: Full path to a file to import
@@ -383,6 +382,7 @@ class OclBulkImporter(object):
         :param api_token: OCL API token for the user account that will run the import
         :param queue: Optional bulk import queue key
         :param test_mode: Set to True to simulate the import
+        :param do_parallel_processing: Set to True to process resources of same type in parallel
         """
 
         # Prepare the body (import JSON) of the post request
@@ -396,16 +396,16 @@ class OclBulkImporter(object):
             file_handle = open(file_path, 'rb')
             post_data = file_handle.read()
 
-        # Process the import
-        url = '%s%s' % (api_url_root, OclBulkImporter.OCL_BULK_IMPORT_API_ENDPOINT)
+        # Submit the import
+        if do_parallel_processing:
+            url = '%s%s' % (api_url_root, OclBulkImporter.OCL_BULK_IMPORT_PARALLEL_API_ENDPOINT)
+        else:
+            url = '%s%s' % (api_url_root, OclBulkImporter.OCL_BULK_IMPORT_API_ENDPOINT)
         if queue:
             url += '%s/' % queue
         api_headers = {'Authorization': 'Token ' + api_token}
         import_response = requests.post(url, headers=api_headers, data=post_data)
-        # import_response.raise_for_status()
-        # import_response_json = import_response.json()
-        # task_id = import_response_json['task']
-        # return task_id
+
         return import_response
 
     @staticmethod
@@ -418,10 +418,7 @@ class OclBulkImporter(object):
             corresponding to values status values that are still returned.
         """
         # Retrieve the queued imports
-        url = '%s/manage/bulkimport/' % api_url_root
-        # when we get rid of py2 support use following
-        # url = '%s/importers/bulk-import/' % api_url_root
-
+        url = '%s%s' % (api_url_root, OclBulkImporter.OCL_BULK_IMPORT_API_ENDPOINT)
         if queue:
             url += '%s/' % queue
         api_headers = {}
