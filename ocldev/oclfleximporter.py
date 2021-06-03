@@ -105,6 +105,11 @@ class OclImportResults(object):
         self.num_skipped = 0
         self.total_lines = total_lines
         self.elapsed_seconds = 0
+        self.queue = ''
+        self.username = ''
+        self.state = ''
+        self.task = ''
+        self.details = None
 
     def add(self, obj_url='', action_type='', obj_type='', obj_repo_url='',
             http_method='', obj_owner_url='', status_code=None, text='', message=''):
@@ -341,6 +346,11 @@ class OclImportResults(object):
             results_obj.num_skipped = json_results.get('num_skipped', 0)
             results_obj.total_lines = json_results.get('total_lines', 0)
             results_obj.elapsed_seconds = json_results.get('elapsed_seconds', 0)
+            results_obj.queue = json_results.get('queue', '')
+            results_obj.queue = json_results.get('username', '')
+            results_obj.queue = json_results.get('state', '')
+            results_obj.queue = json_results.get('task', '')
+            results_obj.queue = json_results.get('details', None)
             return results_obj
         else:
             raise TypeError('Expected string or dict. "%s" received.' % str(type(json_results)))
@@ -373,7 +383,7 @@ class OclBulkImporter(object):
 
     @staticmethod
     def post(file_path='', input_list=None, api_url_root='', api_token='', queue='',
-             test_mode=False, do_parallel_processing=False):
+             test_mode=False, parallel=False):
         """
         Post the import to the OCL bulk import API endpoint and return the request object
         :param file_path: Full path to a file to import
@@ -382,7 +392,7 @@ class OclBulkImporter(object):
         :param api_token: OCL API token for the user account that will run the import
         :param queue: Optional bulk import queue key
         :param test_mode: Set to True to simulate the import
-        :param do_parallel_processing: Set to True to process resources of same type in parallel
+        :param parallel: Set to True to process resources of same type in parallel
         """
 
         # Prepare the body (import JSON) of the post request
@@ -397,7 +407,7 @@ class OclBulkImporter(object):
             post_data = file_handle.read()
 
         # Submit the import
-        if do_parallel_processing:
+        if parallel:
             url = '%s%s' % (api_url_root, OclBulkImporter.OCL_BULK_IMPORT_PARALLEL_API_ENDPOINT)
         else:
             url = '%s%s' % (api_url_root, OclBulkImporter.OCL_BULK_IMPORT_API_ENDPOINT)
