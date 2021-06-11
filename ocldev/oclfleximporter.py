@@ -409,6 +409,7 @@ class OclBulkImporter(object):
         # Submit the import
         if parallel:
             url = '%s%s' % (api_url_root, OclBulkImporter.OCL_BULK_IMPORT_PARALLEL_API_ENDPOINT)
+            post_data = dict(data=post_data)
         else:
             url = '%s%s' % (api_url_root, OclBulkImporter.OCL_BULK_IMPORT_API_ENDPOINT)
         if queue:
