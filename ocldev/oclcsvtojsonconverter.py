@@ -715,6 +715,8 @@ class OclCsvToJsonConverter(object):
             return int(value)
         elif datatype == 'float':
             return float(value)
+        elif datatype == 'list':
+            return [v.strip() for v in value.strip('][').split(',')]
         return value
 
     def process_auto_concept_reference(self, csv_row, field_def):
@@ -885,6 +887,7 @@ class OclStandardCsvToJsonConverter(OclCsvToJsonConverter):
                 {'resource_field': 'retired', 'column': 'retired', 'required': False},
                 {'resource_field': 'external_id', 'column': 'external_id', 'required': False},
                 {'resource_field': 'concept_class', 'column': 'concept_class'},
+                {'resource_field': 'parent_concept_urls', 'column': 'parent_concept_urls', 'default': None, 'datatype': 'list'},
                 {'resource_field': 'datatype', 'column': 'datatype', 'default': 'None'},
                 {'resource_field': 'owner', 'column': 'owner_id'},
                 {'resource_field': 'owner_type', 'column': 'owner_type',
