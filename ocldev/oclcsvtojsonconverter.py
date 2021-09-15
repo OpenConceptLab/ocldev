@@ -451,6 +451,8 @@ class OclCsvToJsonConverter(object):
                 # Check if standard attr (e.g. attr:my-custom-attr)
                 if not omit_if_empty_value or (omit_if_empty_value and csv_row[column_name]):
                     key_name = column_name[len(standard_needle):]
+                    if key_name.endswith(":" + data_type):
+                        key_name = key_name.replace(":" + data_type, "")
                     extra_attributes[key_name] = self.do_datatype_conversion(csv_row[column_name], data_type)
             else:
                 key_regex_match = re.search(key_needle, column_name)
