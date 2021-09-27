@@ -14,6 +14,8 @@ import re
 
 import six
 
+from distutils import util
+
 from ocldev import oclconstants
 
 
@@ -436,14 +438,22 @@ class OclCsvToJsonConverter(object):
             re.escape(auto_attributes_def[self.DEF_KEY_AUTO_INDEX_PREFIX]),
             auto_attributes_def[self.DEF_KEY_AUTO_INDEX_REGEX],
             re.escape(auto_attributes_def[self.DEF_KEY_AUTO_INDEX_POSTFIX]))
+        data_types = ['bool', 'str', 'int', 'float', 'list']
 
         # Process CSV columns
         for column_name in csv_row:
+            data_type = 'str'
+            if column_name.count(':') == 2:
+                suffix_part = column_name.split(':')[2].strip()
+                if suffix_part in data_types:
+                    data_type = suffix_part
             if column_name[:len(standard_needle)] == standard_needle:
                 # Check if standard attr (e.g. attr:my-custom-attr)
                 if not omit_if_empty_value or (omit_if_empty_value and csv_row[column_name]):
                     key_name = column_name[len(standard_needle):]
-                    extra_attributes[key_name] = csv_row[column_name]
+                    if key_name.endswith(":" + data_type):
+                        key_name = key_name.replace(":" + data_type, "")
+                    extra_attributes[key_name] = self.do_datatype_conversion(csv_row[column_name], data_type)
             else:
                 key_regex_match = re.search(key_needle, column_name)
                 value_regex_match = re.search(value_needle, column_name)
@@ -710,7 +720,7 @@ class OclCsvToJsonConverter(object):
         desired datatype (e.g. datatype="bool", "int", "float").
         """
         if datatype == 'bool':
-            return bool(value)
+            return bool(util.strtobool(str(value)))
         elif datatype == 'int':
             return int(value)
         elif datatype == 'float':
