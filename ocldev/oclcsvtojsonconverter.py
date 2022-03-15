@@ -438,7 +438,8 @@ class OclCsvToJsonConverter(object):
             re.escape(auto_attributes_def[self.DEF_KEY_AUTO_INDEX_PREFIX]),
             auto_attributes_def[self.DEF_KEY_AUTO_INDEX_REGEX],
             re.escape(auto_attributes_def[self.DEF_KEY_AUTO_INDEX_POSTFIX]))
-        data_types = ['bool', 'str', 'int', 'float', 'list']
+
+        data_types = ['bool', 'str', 'int', 'float', 'list', 'json']
 
         # Process CSV columns
         for column_name in csv_row:
@@ -727,6 +728,11 @@ class OclCsvToJsonConverter(object):
             return float(value)
         elif datatype == 'list':
             return [v.strip() for v in value.strip('][').split(',')]
+        elif datatype == 'json':
+            try:
+                return json.loads(value)
+            except:
+                return value
         return value
 
     def process_auto_concept_reference(self, csv_row, field_def):
