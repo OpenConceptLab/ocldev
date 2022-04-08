@@ -900,7 +900,7 @@ class OclStandardCsvToJsonConverter(OclCsvToJsonConverter):
             '__trigger_value': oclconstants.OclConstants.RESOURCE_TYPE_CONCEPT,
             'skip_if_empty_column': 'id',
             OclCsvToJsonConverter.DEF_CORE_FIELDS: [
-                {'resource_field': 'retired', 'column': 'retired', 'required': False},
+                {'resource_field': 'retired', 'column': 'retired', 'required': False, 'datatype': 'bool'},
                 {'resource_field': 'external_id', 'column': 'external_id', 'required': False},
                 {'resource_field': 'concept_class', 'column': 'concept_class'},
                 {'resource_field': 'parent_concept_urls', 'column': 'parent_concept_urls',
