@@ -991,6 +991,7 @@ class OclStandardCsvToJsonConverter(OclCsvToJsonConverter):
                 'index_regex': AUTO_INDEX_STANDARD_REGEX,
                 'skip_if_empty_column_prefix': ['map_to_concept_id', 'map_to_concept_url'],
                 OclCsvToJsonConverter.DEF_CORE_FIELDS: [
+                    {'resource_field': 'retired', 'column': 'retired', 'required': False, 'datatype': 'bool'},
                     {'resource_field': 'map_target', 'column_prefix': 'map_target',
                      'default': oclconstants.OclConstants.MAPPING_TARGET_INTERNAL},
                     {'resource_field': 'map_type', 'column_prefix': 'map_type',
@@ -1046,6 +1047,7 @@ class OclStandardCsvToJsonConverter(OclCsvToJsonConverter):
                 'index_regex': AUTO_INDEX_STANDARD_REGEX,
                 'skip_if_empty_column_prefix': ['extmap_to_concept_id', 'extmap_to_concept_url'],
                 OclCsvToJsonConverter.DEF_CORE_FIELDS: [
+                    {'resource_field': 'retired', 'column': 'retired', 'required': False, 'datatype': 'bool'},
                     {'resource_field': 'map_target', 'column_prefix': 'extmap_target',
                      'default': oclconstants.OclConstants.MAPPING_TARGET_EXTERNAL},
                     {'resource_field': 'map_type', 'column_prefix': 'extmap_type',
@@ -1134,6 +1136,7 @@ class OclStandardCsvToJsonConverter(OclCsvToJsonConverter):
             'skip_if_empty_column': ['map_to_concept_id', 'to_concept_id',
                                      'map_to_concept_url', 'to_concept_url'],
             OclCsvToJsonConverter.DEF_CORE_FIELDS: [
+                {'resource_field': 'retired', 'column': 'retired', 'required': False, 'datatype': 'bool'},
                 {'resource_field': 'map_target', 'column': 'map_target',
                  'default': oclconstants.OclConstants.MAPPING_TARGET_INTERNAL},
                 {'resource_field': 'map_type', 'column': 'map_type', 'default': 'Same As'},
@@ -1180,6 +1183,7 @@ class OclStandardCsvToJsonConverter(OclCsvToJsonConverter):
             'skip_if_empty_column': ['map_to_concept_id', 'to_concept_id',
                                      'map_to_concept_url', 'to_concept_url'],
             OclCsvToJsonConverter.DEF_CORE_FIELDS: [
+                {'resource_field': 'retired', 'column': 'retired', 'required': False, 'datatype': 'bool'},
                 {'resource_field': 'map_target', 'column': 'map_target',
                  'default': oclconstants.OclConstants.MAPPING_TARGET_EXTERNAL},
                 {'resource_field': 'map_type', 'column': 'map_type', 'default': 'Same As'},
