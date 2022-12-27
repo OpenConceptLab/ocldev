@@ -41,4 +41,4 @@ webencodings==0.5.1
 wrapt==1.11.2
 zipp==0.6.0
 zope.interface==4.6.0
-setuptools==45
+setuptools==65.5.1
