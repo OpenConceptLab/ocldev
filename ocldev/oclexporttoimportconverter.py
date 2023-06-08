@@ -2,12 +2,13 @@ import json
 
 
 class OCLExportToImportConverter:
-    def __init__(self, content=None, export_file=None, owner=None, owner_type=None, out_file_name=None):
+    def __init__(self, content=None, export_file=None, owner=None, owner_type=None, version=None, out_file_name=None):
         self.content = json.loads(content) if content else None
         if export_file and not self.content:
             self.content = json.loads(open(export_file, 'r').read())
         self.owner = owner
         self.owner_type = owner_type
+        self.version = version
         self.out_file_name = out_file_name or 'importable_export.json'
         self.repo_type = self.get_repo_type()
         self.should_replace_owner = bool(self.owner and self.owner_type)
@@ -141,7 +142,7 @@ class OCLExportToImportConverter:
 
         return {
             'type': self.get('type'),
-            'id': self.get('version'),
+            'id': self.version or self.get('version'),
             'description': self.get('description'),
             'released': self.get('released'),
             'source': self.get('short_code'),
