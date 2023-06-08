@@ -26,6 +26,7 @@ jobs:
     - name: Install dependencies
       run: |
         python setup.py install
+        pip install six
 #        pip install flake8 pytest
 #     - name: Lint with flake8
 #       run: |
