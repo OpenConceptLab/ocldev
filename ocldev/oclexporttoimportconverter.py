@@ -2,7 +2,10 @@ import json
 
 
 class OCLExportToImportConverter:
-    def __init__(self, content=None, export_file=None, owner=None, owner_type=None, version=None, out_file_name=None):
+    def __init__(
+            self, content=None, export_file=None, owner=None, owner_type=None, version=None,
+            out_file_name=None, return_output=False
+    ):
         self.content = json.loads(content) if content else None
         if export_file and not self.content:
             self.content = json.loads(open(export_file, 'r').read())
@@ -10,6 +13,8 @@ class OCLExportToImportConverter:
         self.owner_type = owner_type
         self.version = version
         self.out_file_name = out_file_name or 'importable_export.json'
+        self.return_output = return_output
+        self.result = []
         self.repo_type = self.get_repo_type()
         self.should_replace_owner = bool(self.owner and self.owner_type)
         self.validate()
@@ -30,6 +35,10 @@ class OCLExportToImportConverter:
         return self.content.get(key, default_value)
 
     def write(self, data):
+        if self.return_output:
+            self.result += data if isinstance(data, list) else [data]
+            return
+
         with open(self.out_file_name, 'a') as out:
             if isinstance(data, list):
                 for d in data:
