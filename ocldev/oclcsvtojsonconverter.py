@@ -838,6 +838,7 @@ class OclStandardCsvToJsonConverter(OclCsvToJsonConverter):
                  'default': 'en'},
                 {'resource_field': 'website', 'column': 'website', 'required': False},
                 {'resource_field': 'description', 'column': 'description', 'required': False},
+                {'resource_field': 'canonical_url', 'column': 'canonical_url', 'required': False},
                 {'resource_field': 'custom_validation_schema', 'column': 'custom_validation_schema',
                  'required': False},
                 {'resource_field': 'owner', 'column': 'owner_id'},
@@ -875,6 +876,7 @@ class OclStandardCsvToJsonConverter(OclCsvToJsonConverter):
                  'default': 'en'},
                 {'resource_field': 'website', 'column': 'website', 'required': False},
                 {'resource_field': 'description', 'column': 'description', 'required': False},
+                {'resource_field': 'canonical_url', 'column': 'canonical_url', 'required': False},
                 {'resource_field': 'custom_validation_schema', 'column': 'custom_validation_schema',
                  'required': False},
                 {'resource_field': 'owner', 'column': 'owner_id'},
@@ -1243,6 +1245,7 @@ class OclStandardCsvToJsonConverter(OclCsvToJsonConverter):
             'skip_if_empty_column': 'id',
             OclCsvToJsonConverter.DEF_CORE_FIELDS: [
                 {'resource_field': 'description', 'column': 'description'},
+                {'resource_field': 'canonical_url', 'column': 'canonical_url', 'required': False},
                 {'resource_field': 'released', 'column': 'released', 'required': False,
                  'datatype': 'bool'},
                 {'resource_field': 'retired', 'column': 'retired', 'required': False,
@@ -1263,6 +1266,7 @@ class OclStandardCsvToJsonConverter(OclCsvToJsonConverter):
             'skip_if_empty_column': 'id',
             OclCsvToJsonConverter.DEF_CORE_FIELDS: [
                 {'resource_field': 'description', 'column': 'description'},
+                {'resource_field': 'canonical_url', 'column': 'canonical_url', 'required': False},
                 {'resource_field': 'released', 'column': 'released', 'required': False,
                  'datatype': 'bool'},
                 {'resource_field': 'retired', 'column': 'retired', 'required': False,
