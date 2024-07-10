@@ -220,7 +220,7 @@ def main():
 
 def usage() -> None:
     print("Use this as:")
-    print("python3 checksum.py -r <concept|mapping> -c standard -d '{...json...}'")
+    print("python3 checksum.py -r <concept|mapping> -c <standard|smart> -d '{...json...}'")
 
 
 if __name__ == '__main__':
