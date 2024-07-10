@@ -41,11 +41,14 @@ class Checksum:
     def get_concept_fields(self, data):
         name_fields = ['locale', 'locale_preferred', 'name', 'name_type']
         description_fields = ['locale', 'locale_preferred', 'description', 'description_type']
+        fields = {
+            'concept_class': data.get('concept_class', None),
+            'datatype': data.get('datatype', None),
+            'retired': data.get('retired', False),
+        }
         if self.checksum_type == 'standard':
             return {
-                'concept_class': data.get('concept_class', None),
-                'datatype': data.get('datatype', None),
-                'retired': data.get('retired', False),
+                **fields,
                 'external_id': data.get('external_id', None),
                 'extras': data.get('extras', None),
                 'names': self._locales_for_checksums(
@@ -64,9 +67,7 @@ class Checksum:
                 'child_concept_urls': data.get('child_concept_urls', []),
             }
         return {
-                'concept_class': data.get('concept_class', None),
-                'datatype': data.get('datatype', None),
-                'retired': data.get('retired', False),
+                **fields,
                 'names': self._locales_for_checksums(
                     data,
                     'names',
