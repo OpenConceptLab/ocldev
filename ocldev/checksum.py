@@ -39,8 +39,8 @@ class Checksum:
         return self._generate(checksums)
 
     def get_concept_fields(self, data):
-        name_fields = ['locale', 'locale_preferred', 'name', 'name_type']
-        description_fields = ['locale', 'locale_preferred', 'description', 'description_type']
+        name_fields = ['locale', 'locale_preferred', 'name', 'name_type', 'external_id']
+        description_fields = ['locale', 'locale_preferred', 'description', 'description_type', 'external_id']
         fields = {
             'concept_class': data.get('concept_class', None),
             'datatype': data.get('datatype', None),
