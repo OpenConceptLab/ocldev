@@ -178,12 +178,13 @@ class Checksum:
 
     def _generate(self, obj, hash_algorithm='MD5'):
         # hex encoding is used to make the hash more readable
-        serialized_obj = self._serialize(obj).encode('utf-8')
-
+        serialized_obj = self._serialize(obj)
         if self.verbosity:
             print("\n")
             print("After Serialization")
-            print(serialized_obj.decode())
+            print(serialized_obj)
+
+        serialized_obj = serialized_obj.encode('utf-8')
 
         hash_func = hashlib.new(hash_algorithm)
         hash_func.update(serialized_obj)
