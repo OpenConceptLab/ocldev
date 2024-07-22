@@ -153,12 +153,15 @@ class Checksum:
                 if value is None:
                     continue
                 if key in [
-                    'retired', 'parent_concept_urls', 'child_concept_urls', 'descriptions', 'extras', 'names'
+                    'retired', 'parent_concept_urls', 'child_concept_urls', 'descriptions', 'extras', 'names',
+                    'locale_preferred', 'name_type', 'description_type'
                 ] and not value:
                     continue
+                if key in ['names', 'descriptions']:
+                    value = [Checksum._cleanup(val) for val in value]
                 if key in ['is_active'] and value:
                     continue
-                if isinstance(value, (int, float)):
+                if not isinstance(value, bool) and isinstance(value, (int, float)):
                     if int(value) == float(value):
                         value = int(value)
                 if key in ['extras']:
