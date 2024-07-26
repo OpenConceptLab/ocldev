@@ -5,22 +5,28 @@ from uuid import UUID
 from pprint import pprint
 
 
+def getvalue(obj, key, default=None):
+    if obj is None:
+        return default
+    if isinstance(obj, dict):
+        return obj.get(key, default)
+    return getattr(obj, key, default)
+
+
 class Checksum:
     def __init__(self, resource, data, checksum_type='standard', verbosity=0):
         self.resource = resource
         self.checksum_type = checksum_type
         self.data = self.flatten([data])
         self.verbosity = verbosity
-        if not self.resource or self.resource.lower() not in ['concept', 'mapping']:
+        if self.resource and self.resource.lower() not in [
+            'concept', 'mapping', 'source', 'collection', 'organization', 'org', 'user']:
             raise ValueError(f"Invalid resource: {self.resource}")
         if self.checksum_type not in ['standard', 'smart']:
             raise ValueError(f"Invalid checksum type: {self.checksum_type}")
 
     def generate(self):
-        if self.resource == 'concept':
-            data = [self.get_concept_fields(_data) for _data in self.data]
-        else:
-            data = [self.get_mapping_fields(_data) for _data in self.data]
+        data = self._get_data_by_resource()
 
         if self.verbosity:
             print("\n")
@@ -38,19 +44,36 @@ class Checksum:
             return checksums[0]
         return self._generate(checksums)
 
+    def _get_data_by_resource(self):
+        if self.resource == 'concept':
+            data = [self.get_concept_fields(_data) for _data in self.data]
+        elif self.resource == 'mapping':
+            data = [self.get_mapping_fields(_data) for _data in self.data]
+        elif self.resource in ['organization', 'org']:
+            data = [self.get_organization_fields(_data) for _data in self.data]
+        elif self.resource == 'user':
+            data = [self.get_user_fields(_data) for _data in self.data]
+        elif self.resource == 'source':
+            data = [self.get_source_fields(_data) for _data in self.data]
+        elif self.resource == 'collection':
+            data = [self.get_collection_fields(_data) for _data in self.data]
+        else:
+            data = self.data
+        return data
+
     def get_concept_fields(self, data):
         name_fields = ['locale', 'locale_preferred', 'name', 'name_type', 'external_id']
         description_fields = ['locale', 'locale_preferred', 'description', 'description_type', 'external_id']
         fields = {
-            'concept_class': data.get('concept_class', None),
-            'datatype': data.get('datatype', None),
-            'retired': data.get('retired', False),
+            'concept_class': getvalue(data, 'concept_class', None),
+            'datatype': getvalue(data, 'datatype', None),
+            'retired': getvalue(data, 'retired', False),
         }
         if self.checksum_type == 'standard':
             return {
                 **fields,
-                'external_id': data.get('external_id', None),
-                'extras': data.get('extras', None),
+                'external_id': getvalue(data, 'external_id', None),
+                'extras': getvalue(data, 'extras', None),
                 'names': self._locales_for_checksums(
                     data,
                     'names',
@@ -63,8 +86,8 @@ class Checksum:
                     description_fields,
                     lambda _: True
                 ),
-                'parent_concept_urls': data.get('parent_concept_urls', []),
-                'child_concept_urls': data.get('child_concept_urls', []),
+                'parent_concept_urls': getvalue(data, 'parent_concept_urls', []),
+                'child_concept_urls': getvalue(data, 'child_concept_urls', []),
             }
         return {
                 **fields,
@@ -72,25 +95,25 @@ class Checksum:
                     data,
                     'names',
                     name_fields,
-                    lambda locale: self.is_fully_specified_type(locale.get('name_type', None))
+                    lambda locale: self.is_fully_specified_type(getvalue(locale, 'name_type', None))
                 ),
             }
 
     def get_mapping_fields(self, data):
         fields = {
-                'map_type': data.get('map_type', None),
-                'from_concept_code': data.get('from_concept_code', None),
-                'to_concept_code': data.get('to_concept_code', None),
-                'from_concept_name': data.get('from_concept_name', None),
-                'to_concept_name': data.get('to_concept_name', None),
-                'retired': data.get('retired', False)
+                'map_type': getvalue(data, 'map_type', None),
+                'from_concept_code': getvalue(data, 'from_concept_code', None),
+                'to_concept_code': getvalue(data, 'to_concept_code', None),
+                'from_concept_name': getvalue(data, 'from_concept_name', None),
+                'to_concept_name': getvalue(data, 'to_concept_name', None),
+                'retired': getvalue(data, 'retired', False)
             }
         if self.checksum_type == 'standard':
             return {
                 **fields,
-                'sort_weight': float(data.get('sort_weight', 0)) or None,
+                'sort_weight': float(getvalue(data, 'sort_weight', 0)) or None,
                 **{
-                    field: data.get(field, None) or None for field in [
+                    field: getvalue(data, field, None) or None for field in [
                         'extras',
                         'external_id',
                         'from_source_url',
@@ -101,6 +124,86 @@ class Checksum:
                 }
             }
         return fields
+
+    def get_organization_fields(self, data):
+        fields = {
+            'name': getvalue(data, 'name', None),
+            'company': getvalue(data, 'company', None),
+            'location': getvalue(data, 'location', None),
+            'website': getvalue(data, 'website', None),
+        }
+        if self.checksum_type == 'standard':
+            return {
+                **fields,
+                'extras': getvalue(data, 'extras', None),
+            }
+        return {
+            **fields,
+            'is_active': getvalue(data, 'is_active', True)
+        }
+
+    def get_user_fields(self, data):
+        fields = {
+            'first_name': getvalue(data, 'first_name', None),
+            'last_name': getvalue(data, 'last_name', None),
+            'username': getvalue(data, 'username', None),
+            'company': getvalue(data, 'company', None),
+            'location': getvalue(data, 'location', None),
+        }
+        if self.checksum_type == 'standard':
+            return {
+                **fields,
+                'website': getvalue(data, 'website', None),
+                'preferred_locale': getvalue(data, 'preferred_locale', None),
+                'extras': getvalue(data, 'extras', None)
+            }
+        return {
+            **fields,
+            'is_active': getvalue(data, 'is_active', True)
+        }
+
+    def get_collection_fields(self, data):
+        fields = {
+            'collection_type': getvalue(data, 'collection_type', None),
+            'canonical_url': getvalue(data, 'canonical_url', None),
+            'custom_validation_schema': getvalue(data, 'custom_validation_schema', None),
+            'default_locale': getvalue(data, 'default_locale', None),
+        }
+        if self.checksum_type == 'standard':
+            return {
+                **fields,
+                'supported_locales': getvalue(data, 'supported_locales', None),
+                'website': getvalue(data, 'website', None),
+                'extras': getvalue(data, 'extras', None),
+            }
+
+        return {
+            **fields,
+            'released': getvalue(data, 'released', False),
+            'retired': getvalue(data, 'retired', False),
+        }
+
+    def get_source_fields(self, data):
+        fields = {
+            'source_type': getvalue(data, 'collection_type', None),
+            'canonical_url': getvalue(data, 'canonical_url', None),
+            'custom_validation_schema': getvalue(data, 'custom_validation_schema', None),
+            'default_locale': getvalue(data, 'default_locale', None),
+        }
+        if self.checksum_type == 'standard':
+            return {
+                **fields,
+                'hierarchy_meaning': getvalue(data, 'hierarchy_meaning', None),
+                'supported_locales': getvalue(data, 'supported_locales', None),
+                'website': getvalue(data, 'website', None),
+                'extras': getvalue(data, 'extras', None),
+            }
+
+        return {
+            **fields,
+            'released': getvalue(data, 'released', False),
+            'retired': getvalue(data, 'retired', False),
+        }
 
     @staticmethod
     def generic_sort(_list):
@@ -176,8 +279,8 @@ class Checksum:
 
     @staticmethod
     def _locales_for_checksums(data, relation, fields, predicate_func):
-        locales = data.get(relation, [])
-        return [{field: locale.get(field, None) for field in fields} for locale in locales if predicate_func(locale)]
+        locales = getvalue(data, relation, [])
+        return [{field: getvalue(locale, field, None) for field in fields} for locale in locales if predicate_func(locale)]
 
     def _generate(self, obj, hash_algorithm='MD5'):
         # hex encoding is used to make the hash more readable
@@ -224,7 +327,7 @@ def main():
 
 def usage() -> None:
     print("Use this as:")
-    print("python3 checksum.py -r <concept|mapping> -c <standard|smart> -d '{...json...}'")
+    print("python3 checksum.py -r <concept|mapping|org|user|source|collection> -c <standard|smart> -d '{...json...}'")
 
 
 if __name__ == '__main__':
