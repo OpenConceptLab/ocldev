@@ -8,3 +8,4 @@ if six.PY2:
     import oclexport
     import oclfleximporter
     import oclresourcelist
+    import checksum

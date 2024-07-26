@@ -20,7 +20,7 @@ class Checksum:
         self.data = self.flatten([data])
         self.verbosity = verbosity
         if self.resource and self.resource.lower() not in [
-            'concept', 'mapping', 'source', 'collection', 'organization', 'org', 'user']:
+            'concept', 'mapping', 'source', 'collection', 'organization', 'org', 'user', 'userprofile']:
             raise ValueError(f"Invalid resource: {self.resource}")
         if self.checksum_type not in ['standard', 'smart']:
             raise ValueError(f"Invalid checksum type: {self.checksum_type}")
@@ -51,7 +51,7 @@ class Checksum:
             data = [self.get_mapping_fields(_data) for _data in self.data]
         elif self.resource in ['organization', 'org']:
             data = [self.get_organization_fields(_data) for _data in self.data]
-        elif self.resource == 'user':
+        elif self.resource in ['user', 'userprofile']:
             data = [self.get_user_fields(_data) for _data in self.data]
         elif self.resource == 'source':
             data = [self.get_source_fields(_data) for _data in self.data]
