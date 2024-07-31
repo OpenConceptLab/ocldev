@@ -23,8 +23,13 @@ class Checksum:
         self.data = self.flatten([data])
         self.verbosity = verbosity
         if self.resource and self.resource.lower() not in [
-            'concept', 'mapping', 'source', 'collection', 'organization', 'org', 'user', 'userprofile',
-            'conceptname', 'conceptdescription'
+            'conceptname', 'conceptnames', 'conceptdescription', 'conceptdescriptions',
+            'concept', 'concepts', 'concept_version', 'concept_versions',
+            'mapping', 'mappings', 'mapping_version', 'mapping_versions',
+            'organization', 'org', 'orgs', 'organizations',
+            'user', 'userprofile', 'users', 'userprofiles',
+            'source', 'sources', 'source_version', 'source_versions',
+            'collection', 'collections', 'collection_version', 'collection_versions'
         ]:
             raise ValueError(f"Invalid resource: {self.resource}")
         if self.checksum_type not in ['standard', 'smart']:
