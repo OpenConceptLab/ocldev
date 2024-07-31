@@ -23,7 +23,9 @@ class Checksum:
         self.data = self.flatten([data])
         self.verbosity = verbosity
         if self.resource and self.resource.lower() not in [
-            'concept', 'mapping', 'source', 'collection', 'organization', 'org', 'user', 'userprofile']:
+            'concept', 'mapping', 'source', 'collection', 'organization', 'org', 'user', 'userprofile',
+            'conceptname', 'conceptdescription'
+        ]:
             raise ValueError(f"Invalid resource: {self.resource}")
         if self.checksum_type not in ['standard', 'smart']:
             raise ValueError(f"Invalid checksum type: {self.checksum_type}")
@@ -48,6 +50,10 @@ class Checksum:
         return self._generate(checksums)
 
     def _get_data_by_resource(self):
+        if self.resource == 'conceptname':
+            data = [self.get_concept_name_fields(_data) for _data in self.data]
+        if self.resource == 'conceptdescription':
+            data = [self.get_concept_description_fields(_data) for _data in self.data]
         if self.resource == 'concept':
             data = [self.get_concept_fields(_data) for _data in self.data]
         elif self.resource == 'mapping':
@@ -64,9 +70,17 @@ class Checksum:
             data = self.data
         return data
 
+    @staticmethod
+    def get_concept_name_fields(data):
+        fields = ['locale', 'locale_preferred', 'name', 'name_type', 'external_id']
+        return {field: getvalue(data, field, None) for field in fields}
+
+    @staticmethod
+    def get_concept_description_fields(data):
+        fields = ['locale', 'locale_preferred', 'description', 'description_type', 'external_id']
+        return {field: getvalue(data, field, None) for field in fields}
+
     def get_concept_fields(self, data):
-        name_fields = ['locale', 'locale_preferred', 'name', 'name_type', 'external_id']
-        description_fields = ['locale', 'locale_preferred', 'description', 'description_type', 'external_id']
         fields = {
             'concept_class': getvalue(data, 'concept_class', None),
             'datatype': getvalue(data, 'datatype', None),
@@ -80,13 +94,11 @@ class Checksum:
                 'names': self._locales_for_checksums(
                     data,
                     'names',
-                    name_fields,
                     lambda _: True
                 ),
                 'descriptions': self._locales_for_checksums(
                     data,
                     'descriptions',
-                    description_fields,
                     lambda _: True
                 ),
                 'parent_concept_urls': getvalue(data, 'parent_concept_urls', []),
@@ -97,7 +109,6 @@ class Checksum:
                 'names': self._locales_for_checksums(
                     data,
                     'names',
-                    name_fields,
                     lambda locale: self.is_fully_specified_type(getvalue(locale, 'name_type', None))
                 ),
             }
@@ -280,10 +291,10 @@ class Checksum:
                 result[key] = value
         return result
 
-    @staticmethod
-    def _locales_for_checksums(data, relation, fields, predicate_func):
+    def _locales_for_checksums(self, data, relation, predicate_func):
         locales = getvalue(data, relation, [])
-        return [{field: getvalue(locale, field, None) for field in fields} for locale in locales if predicate_func(locale)]
+        locale_func = self.get_concept_name_fields if relation == 'names' else self.get_concept_description_fields
+        return [locale_func(locale) for locale in locales if predicate_func(locale)]
 
     def _generate(self, obj, hash_algorithm='MD5'):
         # hex encoding is used to make the hash more readable
