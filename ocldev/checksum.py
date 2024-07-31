@@ -50,21 +50,21 @@ class Checksum:
         return self._generate(checksums)
 
     def _get_data_by_resource(self):
-        if self.resource == 'conceptname':
+        if self.resource in ['conceptname', 'conceptnames']:
             return [self.get_concept_name_fields(_data) for _data in self.data]
-        if self.resource == 'conceptdescription':
+        if self.resource in ['conceptdescription', 'conceptdescriptions']:
             return [self.get_concept_description_fields(_data) for _data in self.data]
-        if self.resource == 'concept':
+        if self.resource in ['concept', 'concepts', 'concept_version', 'concept_versions']:
             return [self.get_concept_fields(_data) for _data in self.data]
-        if self.resource == 'mapping':
+        if self.resource in ['mapping', 'mappings', 'mapping_version', 'mapping_versions']:
             return [self.get_mapping_fields(_data) for _data in self.data]
-        if self.resource in ['organization', 'org']:
+        if self.resource in ['organization', 'org', 'orgs', 'organizations']:
             return [self.get_organization_fields(_data) for _data in self.data]
-        if self.resource in ['user', 'userprofile']:
+        if self.resource in ['user', 'userprofile', 'users', 'userprofiles']:
             return [self.get_user_fields(_data) for _data in self.data]
-        if self.resource == 'source':
+        if self.resource in ['source', 'sources', 'source_version', 'source_versions']:
             return [self.get_source_fields(_data) for _data in self.data]
-        if self.resource == 'collection':
+        if self.resource in ['collection', 'collections', 'collection_version', 'collection_versions']:
             return [self.get_collection_fields(_data) for _data in self.data]
 
         return self.data
