@@ -51,24 +51,23 @@ class Checksum:
 
     def _get_data_by_resource(self):
         if self.resource == 'conceptname':
-            data = [self.get_concept_name_fields(_data) for _data in self.data]
+            return [self.get_concept_name_fields(_data) for _data in self.data]
         if self.resource == 'conceptdescription':
-            data = [self.get_concept_description_fields(_data) for _data in self.data]
+            return [self.get_concept_description_fields(_data) for _data in self.data]
         if self.resource == 'concept':
-            data = [self.get_concept_fields(_data) for _data in self.data]
-        elif self.resource == 'mapping':
-            data = [self.get_mapping_fields(_data) for _data in self.data]
-        elif self.resource in ['organization', 'org']:
-            data = [self.get_organization_fields(_data) for _data in self.data]
-        elif self.resource in ['user', 'userprofile']:
-            data = [self.get_user_fields(_data) for _data in self.data]
-        elif self.resource == 'source':
-            data = [self.get_source_fields(_data) for _data in self.data]
-        elif self.resource == 'collection':
-            data = [self.get_collection_fields(_data) for _data in self.data]
-        else:
-            data = self.data
-        return data
+            return [self.get_concept_fields(_data) for _data in self.data]
+        if self.resource == 'mapping':
+            return [self.get_mapping_fields(_data) for _data in self.data]
+        if self.resource in ['organization', 'org']:
+            return [self.get_organization_fields(_data) for _data in self.data]
+        if self.resource in ['user', 'userprofile']:
+            return [self.get_user_fields(_data) for _data in self.data]
+        if self.resource == 'source':
+            return [self.get_source_fields(_data) for _data in self.data]
+        if self.resource == 'collection':
+            return [self.get_collection_fields(_data) for _data in self.data]
+
+        return self.data
 
     @staticmethod
     def get_concept_name_fields(data):
