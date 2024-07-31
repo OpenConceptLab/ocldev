@@ -9,11 +9,11 @@ def getvalue(obj, key, default=None):
     if obj is None:
         return default
     if isinstance(obj, dict):
-        return obj.get(key, default)
+        return obj.get(key, default) or default
     value = getattr(obj, key, default)
     if hasattr(value, 'all'):
         return value.all()
-    return value
+    return value or default
 
 
 class Checksum:
