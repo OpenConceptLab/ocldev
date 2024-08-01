@@ -32,9 +32,7 @@ jobs:
     needs: [test]
     name: Publish to PyPi
     runs-on: ubuntu-latest
-    environment:
-      name: pypi
-      url: https://pypi.org/p/ocldev
+    environment: pypi
     permissions:
       id-token: write
     steps:
