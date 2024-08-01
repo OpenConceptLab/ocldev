@@ -46,6 +46,7 @@ jobs:
     - name: Install dependencies
       run: |
         pip install --upgrade pip --user
+        pip install wheel
         pip install setuptools==44.1.0 --user
         pip install twine==1.15.0 --user
     - name: Build Wheel
