@@ -118,26 +118,52 @@ class Checksum:
             }
 
     def get_mapping_fields(self, data):
+        to_concept_code = getvalue(data, 'to_concept_code', None)
+        to_concept_url = getvalue(data, 'to_concept_url', None)
+        to_source_url = getvalue(data, 'to_source_url', None)
+        to_source_version = getvalue(data, 'to_source_version', None)
+        from_concept_code = getvalue(data, 'from_concept_code', None)
+        from_concept_url = getvalue(data, 'from_concept_url', None)
+        from_source_url = getvalue(data, 'from_source_url', None)
+        from_source_version = getvalue(data, 'from_source_version', None)
+
+        def expand_concept_url(concept_url, concept_code, source_url, source_version):
+            if concept_url and (not concept_code or not source_url):
+                url_parts = concept_url.split('/concepts/')  # /orgs/{org}/sources/{source}(/concepts/){concept}/
+                if not concept_code:
+                    concept_code = url_parts[1].split('/')[0]
+                if not source_url:
+                    source_url = url_parts[0] + '/'
+                    if source_url.count('/') == 6:  # /orgs/{org}/sources/{source}/{source_version}/
+                        source_version = source_url.split('/')[-1]
+                        source_url = '/'.join(source_url.split('/')[:-1])
+            return concept_code, source_url, source_version
+        to_concept_code, to_source_url, to_source_version = expand_concept_url(
+            to_concept_url, to_concept_code, to_source_url, to_source_version)
+        from_concept_code, from_source_url, from_source_version = expand_concept_url(
+            from_concept_url, from_concept_code, from_source_url, from_source_version)
+
         fields = {
                 'map_type': getvalue(data, 'map_type', None),
-                'from_concept_code': getvalue(data, 'from_concept_code', None),
-                'to_concept_code': getvalue(data, 'to_concept_code', None),
+                'from_concept_code': from_concept_code,
+                'to_concept_code': to_concept_code,
                 'from_concept_name': getvalue(data, 'from_concept_name', None),
                 'to_concept_name': getvalue(data, 'to_concept_name', None),
                 'retired': getvalue(data, 'retired', False)
             }
+
         if self.checksum_type == 'standard':
             return {
                 **fields,
                 'sort_weight': float(getvalue(data, 'sort_weight', 0)) or None,
+                'from_source_url': from_source_url,
+                'from_source_version': from_source_version,
+                'to_source_url': to_source_url,
+                'to_source_version': to_source_version,
                 **{
                     field: getvalue(data, field, None) or None for field in [
                         'extras',
                         'external_id',
-                        'from_source_url',
-                        'from_source_version',
-                        'to_source_url',
-                        'to_source_version'
                     ]
                 }
             }
