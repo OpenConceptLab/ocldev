@@ -1,8 +1,9 @@
 import argparse
 import hashlib
 import json
-from uuid import UUID
 from pprint import pprint
+from urllib import parse
+from uuid import UUID
 
 
 def getvalue(obj, key, default=None):
@@ -117,6 +118,10 @@ class Checksum:
                 ),
             }
 
+    @staticmethod
+    def decode_string(string, plus=True):
+        return parse.unquote_plus(string) if plus else parse.unquote(string)
+
     def get_mapping_fields(self, data):
         to_concept_code = getvalue(data, 'to_concept_code', None)
         to_concept_url = getvalue(data, 'to_concept_url', None)
@@ -137,6 +142,8 @@ class Checksum:
                     if source_url.count('/') == 6:  # /orgs/{org}/sources/{source}/{source_version}/
                         source_version = source_url.split('/')[-1]
                         source_url = '/'.join(source_url.split('/')[:-1])
+            if concept_code:
+                concept_code = self.decode_string(concept_code)
             return concept_code, source_url, source_version
         to_concept_code, to_source_url, to_source_version = expand_concept_url(
             to_concept_url, to_concept_code, to_source_url, to_source_version)
