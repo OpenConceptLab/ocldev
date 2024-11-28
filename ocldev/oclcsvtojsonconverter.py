@@ -1035,6 +1035,15 @@ class OclStandardCsvToJsonConverter(OclCsvToJsonConverter):
                     {'resource_field': 'source', 'column_prefix': 'map_source', 'column': 'source'},
                 ],
             },
+            OclCsvToJsonConverter.DEF_AUTO_ATTRIBUTES: {
+                'standard_column_prefix': 'attr',  # e.g. 'attr:Reporting Frequency'
+                'separator': ':',
+                'key_column_prefix': 'attr_key',  # 2-digit number required, e.g. attr_key[01]
+                'value_column_prefix': 'attr_value',  # 2-digit number required, e.g. attr_value[01]
+                'index_prefix': AUTO_INDEX_STANDARD_PREFIX,
+                'index_postfix': AUTO_INDEX_STANDARD_POSTFIX,
+                'index_regex': AUTO_INDEX_STANDARD_REGEX,
+            },
         },
         {
             'definition_name': 'Generic Auto Concept External Mappings',
@@ -1094,6 +1103,15 @@ class OclStandardCsvToJsonConverter(OclCsvToJsonConverter):
                     {'resource_field': 'source', 'column_prefix': 'extmap_source',
                      'column': 'source'},
                 ],
+            },
+            OclCsvToJsonConverter.DEF_AUTO_ATTRIBUTES: {
+                'standard_column_prefix': 'attr',  # e.g. 'attr:Reporting Frequency'
+                'separator': ':',
+                'key_column_prefix': 'attr_key',  # 2-digit number required, e.g. attr_key[01]
+                'value_column_prefix': 'attr_value',  # 2-digit number required, e.g. attr_value[01]
+                'index_prefix': AUTO_INDEX_STANDARD_PREFIX,
+                'index_postfix': AUTO_INDEX_STANDARD_POSTFIX,
+                'index_regex': AUTO_INDEX_STANDARD_REGEX,
             },
         },
         {
@@ -1177,7 +1195,16 @@ class OclStandardCsvToJsonConverter(OclCsvToJsonConverter):
                 {'resource_field': 'owner_type', 'column': ['map_owner_type', 'owner_type'],
                  'default': oclconstants.OclConstants.RESOURCE_TYPE_ORGANIZATION},
                 {'resource_field': 'source', 'column': ['map_source', 'source']},
-            ]
+            ],
+            OclCsvToJsonConverter.DEF_AUTO_ATTRIBUTES: {
+                'standard_column_prefix': 'attr',  # e.g. 'attr:Reporting Frequency'
+                'separator': ':',
+                'key_column_prefix': 'attr_key',  # 2-digit number required, e.g. attr_key[01]
+                'value_column_prefix': 'attr_value',  # 2-digit number required, e.g. attr_value[01]
+                'index_prefix': AUTO_INDEX_STANDARD_PREFIX,
+                'index_postfix': AUTO_INDEX_STANDARD_POSTFIX,
+                'index_regex': AUTO_INDEX_STANDARD_REGEX,
+            }
         },
         {
             'definition_name': 'Generic Standalone External Mapping',
@@ -1223,7 +1250,16 @@ class OclStandardCsvToJsonConverter(OclCsvToJsonConverter):
                 {'resource_field': 'owner_type', 'column': ['map_owner_type', 'owner_type'],
                  'default': oclconstants.OclConstants.RESOURCE_TYPE_ORGANIZATION},
                 {'resource_field': 'source', 'column': ['map_source', 'source']},
-            ]
+            ],
+            OclCsvToJsonConverter.DEF_AUTO_ATTRIBUTES: {
+                'standard_column_prefix': 'attr',  # e.g. 'attr:Reporting Frequency'
+                'separator': ':',
+                'key_column_prefix': 'attr_key',  # 2-digit number required, e.g. attr_key[01]
+                'value_column_prefix': 'attr_value',  # 2-digit number required, e.g. attr_value[01]
+                'index_prefix': AUTO_INDEX_STANDARD_PREFIX,
+                'index_postfix': AUTO_INDEX_STANDARD_POSTFIX,
+                'index_regex': AUTO_INDEX_STANDARD_REGEX,
+            }
         },
         {
             'definition_name': 'Generic Collection Reference',
