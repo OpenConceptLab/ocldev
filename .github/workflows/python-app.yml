@@ -41,13 +41,10 @@ jobs:
     - name: Install dependencies
       run: |
         pip install --upgrade pip --user
-        pip install wheel
-        pip install setuptools==44.1.0 --user
-        pip install twine==1.15.0 --user
+        pip install build twine --user
     - name: Build Wheel
       run: |
-        python setup.py sdist bdist_wheel --universal
+        python -m build
         twine check dist/*
     - name: Publish package distributions to PyPI
       uses: pypa/gh-action-pypi-publish@release/v1
-
