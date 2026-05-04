@@ -77,12 +77,12 @@ class Checksum:
 
     @staticmethod
     def get_concept_name_fields(data):
-        fields = ['locale', 'locale_preferred', 'name', 'name_type', 'external_id']
+        fields = ['locale', 'locale_preferred', 'name', 'name_type', 'external_id', 'retired']
         return {field: getvalue(data, field, None) for field in fields}
 
     @staticmethod
     def get_concept_description_fields(data):
-        fields = ['locale', 'locale_preferred', 'description', 'description_type', 'external_id']
+        fields = ['locale', 'locale_preferred', 'description', 'description_type', 'external_id', 'retired']
         return {field: getvalue(data, field, None) for field in fields}
 
     def get_concept_fields(self, data):
