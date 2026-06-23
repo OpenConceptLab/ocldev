@@ -6,6 +6,9 @@ from urllib import parse
 from uuid import UUID
 
 
+LOCALE_STATUS_CHECKSUM_FIELDS = ('retired', 'retire_reason')
+
+
 def getvalue(obj, key, default=None):
     if obj is None:
         return default
@@ -77,12 +80,15 @@ class Checksum:
 
     @staticmethod
     def get_concept_name_fields(data):
-        fields = ['locale', 'locale_preferred', 'name', 'name_type', 'external_id', 'retired']
+        fields = ['locale', 'locale_preferred', 'name', 'name_type', 'external_id', 'retired', 'retire_reason']
         return {field: getvalue(data, field, None) for field in fields}
 
     @staticmethod
     def get_concept_description_fields(data):
-        fields = ['locale', 'locale_preferred', 'description', 'description_type', 'external_id', 'retired']
+        fields = [
+            'locale', 'locale_preferred', 'description', 'description_type', 'external_id', 'retired',
+            'retire_reason'
+        ]
         return {field: getvalue(data, field, None) for field in fields}
 
     def get_concept_fields(self, data):
@@ -331,7 +337,12 @@ class Checksum:
     def _locales_for_checksums(self, data, relation, predicate_func):
         locales = getvalue(data, relation, [])
         locale_func = self.get_concept_name_fields if relation == 'names' else self.get_concept_description_fields
-        return [locale_func(locale) for locale in locales if predicate_func(locale)]
+        checksum_locales = [locale_func(locale) for locale in locales if predicate_func(locale)]
+        if self.checksum_type != 'standard':
+            for locale in checksum_locales:
+                for field in LOCALE_STATUS_CHECKSUM_FIELDS:
+                    locale.pop(field, None)
+        return checksum_locales
 
     def _generate(self, obj, hash_algorithm='MD5'):
         # hex encoding is used to make the hash more readable
