@@ -21,7 +21,7 @@ packaging==19.2
 pathlib2==2.3.5
 pkginfo==1.5.0.1
 pluggy==0.13.0
-py==1.8.0
+py==1.10.0
 Pygments==2.4.2
 pyparsing==2.4.4
 pyrsistent==0.15.7
