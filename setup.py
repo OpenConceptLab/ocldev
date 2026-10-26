@@ -18,6 +18,7 @@ setuptools.setup(
         'requests',
     ],
     license='MPL2.0',
+    license_files=['LICENSE', 'HEALTHCARE-DISCLAIMER.md'],
     project_urls={
         'Documentation': 'http://github.com/OpenConceptLab/ocldev/wiki',
         'Source': 'http://github.com/OpenConceptLab/ocldev',
