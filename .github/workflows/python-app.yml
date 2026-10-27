@@ -18,7 +18,7 @@ jobs:
         cache: 'pip'
     - name: Install dependencies
       run: |
-        python setup.py install
+        pip install .
         pip install six
     - name: Unittest
       run: |
