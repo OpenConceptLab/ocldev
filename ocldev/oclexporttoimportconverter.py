@@ -166,6 +166,13 @@ class OCLExportToImportConverter:
     def get_concepts_data(self):
         results = []
         concepts = self.get('concepts', [])
+        def get_locales(locales):
+            values = []
+            for locale in (locales or []):
+                values.append(
+                    {k: v for k, v in locale.items() if k not in ['uuid', 'checksum', 'checksums', 'type']}
+                )
+            return values
         for concept in concepts:
             data = {
                 k: self.replace_owner_url(v) for k, v in concept.items() if
@@ -175,19 +182,12 @@ class OCLExportToImportConverter:
                           'previous_version_url', 'child_concept_urls', 'checksum', 'checksums', 'update_comment',
                           'public_can_view', 'created_by', 'updated_by', 'versioned_object_url']
             }
-            names = []
-            for name in data['names']:
-                names.append(
-                    {k: v for k, v in name.items() if k not in ['uuid', 'checksum', 'checksums', 'type']}
-                )
-            data['names'] = names
-            descriptions = []
-            for description in descriptions:
-                description.append(
-                    {k: v for k, v in description.items() if k not in ['uuid', 'checksum', 'checksums', 'type']}
-                )
-            data['descriptions'] = descriptions
-            results.append({**data, **self.get_owner_kwargs()})
+            results.append({
+                **data,
+                **self.get_owner_kwargs(),
+                'names': get_locales(data['names']),
+                'descriptions': get_locales(data['descriptions'])
+            })
 
         return results
 

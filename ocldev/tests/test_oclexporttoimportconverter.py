@@ -80,7 +80,15 @@ class OCLExportToImportConverterTest(unittest.TestCase):
             self.assertEqual(converted_content[-1]['owner'], 'foobar')
             self.assertEqual(converted_content[-1]['owner_type'], 'Organization')
             self.assertEqual(converted_content[-1]['source'], 'DemoSource')
-    
+
+            self.assertEqual(converted_content[2]['type'], 'Concept')
+            self.assertEqual(len(converted_content[2]['names']), 1)
+            self.assertEqual(len(converted_content[2]['descriptions']), 1)
+            self.assertEqual(converted_content[2]['names'][0]['name_type'], 'Fully Specified')
+            self.assertEqual(converted_content[2]['names'][0]['name'], 'Cucumber')
+            self.assertEqual(converted_content[2]['descriptions'][0]['description_type'], 'Definition')
+            self.assertEqual(converted_content[2]['descriptions'][0]['description'], 'Cucumber is a vegetable')
+
         remove_file(new_path)
 
     def test_convert_source_version_json_export_to_json_import_format_with_different_version(self):
