@@ -14,9 +14,17 @@ import re
 
 import six
 
-from distutils import util
-
 from ocldev import oclconstants
+
+
+def strtobool(value):
+    """Return True for y/yes/t/true/on/1 and False for n/no/f/false/off/0, as distutils.util.strtobool did."""
+    value = value.lower()
+    if value in ('y', 'yes', 't', 'true', 'on', '1'):
+        return True
+    if value in ('n', 'no', 'f', 'false', 'off', '0'):
+        return False
+    raise ValueError('invalid truth value %r' % (value,))
 
 
 class OclCsvToJsonConverter(object):
@@ -721,7 +729,7 @@ class OclCsvToJsonConverter(object):
         desired datatype (e.g. datatype="bool", "int", "float").
         """
         if datatype == 'bool':
-            return bool(util.strtobool(str(value)))
+            return strtobool(str(value))
         elif datatype == 'int':
             return int(value)
         elif datatype == 'float':
